@@ -25,7 +25,7 @@ configs.append(
 @triton.testing.perf_report(configs)
 def benchmark(M, in_features, out_features, provider):
     input = torch.randn((M, in_features), device='cuda', dtype=torch.float16, requires_grad=True)
-    weight = torch.randn((out_features, in_features), device='cuda', dtype=torch.float16, requires_grad=False)
+    weight = torch.randn((out_features, in_features), device='cuda', dtype=torch.float16, requires_grad=True)
     bias = torch.randn(out_features, device='cuda', dtype=torch.float16, requires_grad=True)
     doutput = torch.randn((M, out_features), device='cuda', dtype=torch.float16, requires_grad=True)
 

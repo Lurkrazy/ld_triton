@@ -5,7 +5,7 @@ import pytest
 from ld_triton.ops.linear.naive_linear import naive_linear
 from ld_triton.ops.linear.triton_linear import triton_linear
 
-# python -m pytest -v -rsx -s -W ignore::UserWarning linear.py -k test_linear
+# python -m pytest -v -rsx -s -W ignore::UserWarning tests/ops/test_linear.py -k test_linear
 @pytest.mark.parametrize('M, in_features, out_features', [(128, 256, 512)])
 def test_linear(M, in_features, out_features):
     factory_kwargs = {'device': 'cuda', 'dtype': torch.float}
