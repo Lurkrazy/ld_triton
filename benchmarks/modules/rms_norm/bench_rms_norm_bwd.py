@@ -10,7 +10,7 @@ from ld_triton.modules.rms_norm.triton_rms_norm import TritonRMSNorm
 @triton.testing.perf_report(
     triton.testing.Benchmark(
         x_names=['N'],
-        x_vals=[512 * i for i in range(2, 8)],
+        x_vals=[512 * i for i in range(2, 32)],
         line_arg='provider',
         line_vals=['llama3', "naive", "triton"], 
         line_names=['Llama3', "Naive","Triton"],

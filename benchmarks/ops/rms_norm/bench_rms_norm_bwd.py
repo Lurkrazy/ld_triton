@@ -1,6 +1,7 @@
 
 import torch
 import triton
+import os
 
 from ld_triton.ops.rms_norm.naive_rms_norm import naive_rms_norm
 from ld_triton.ops.rms_norm.triton_rms_norm import triton_rms_norm
@@ -28,11 +29,8 @@ def bench_rms_norm(M, N, dtype, provider, mode='bwd', eps=1e-5, device='cuda'):
     weight = torch.rand(w_shape, dtype=dtype, device=device, requires_grad=True)
     x = -2.3 + 0.5 * torch.randn(x_shape, dtype=dtype, device=device)
     dy = .1 * torch.randn_like(x)
-    x.requires_grad_(True)
+    x.requires_grad_(False)
     quantiles = [0.5, 0.2, 0.8]
-
-    loss_fn = torch.nn.MSELoss()
-    target = torch.randn_like(x)
 
     def y_fwd():
         if provider == "cublas":
@@ -47,8 +45,8 @@ def bench_rms_norm(M, N, dtype, provider, mode='bwd', eps=1e-5, device='cuda'):
     y = y_fwd()
     gbps = lambda ms: 3 * x.numel() * x.element_size() / ms * 1e-6  # noqa: F811, E704
     ms, min_ms, max_ms = triton.testing.do_bench(lambda: y.backward(dy, retain_graph=True), quantiles=quantiles,
-                                                    grad_to_none=[x], rep=500)
+                                                    grad_to_none=[x, weight], rep=500)
     return gbps(ms), gbps(max_ms), gbps(min_ms)
 
-
-bench_rms_norm.run(show_plots=True, print_data=True)
+save_path = os.path.join(os.path.dirname(__file__), 'bench', torch.cuda.get_device_name(0), 'bwd')
+bench_rms_norm.run(print_data=True, save_path=save_path)

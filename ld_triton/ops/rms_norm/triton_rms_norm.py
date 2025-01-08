@@ -55,9 +55,9 @@ def _triton_rms_norm_x_bwd_kernel(
 
 @triton.jit
 def _triton_rms_norm_weight_bwd_kernel(
-    dx_ptr, x_ptr, dweight_ptr, weight_ptr, dout_ptr, rrms_ptr,
+    x_ptr, dweight_ptr, weight_ptr, dout_ptr, rrms_ptr,
     n_rows, n_cols, eps,
-    dx_row_stride, x_row_stride, dout_row_stride, weight_row_stride,
+    x_row_stride, dout_row_stride, weight_row_stride,
     BLOCK_SIZE: tl.constexpr
 ):
     col_idx = tl.program_id(0)
@@ -132,18 +132,18 @@ class _triton_rms_norm(torch.autograd.Function):
                 dx.stride(0), x.stride(0), dout.stride(0), weight.stride(0),
                 COL_BLOCK_SIZE,
             )
+            dx = dx.view(*shape)
         
         if weight.requires_grad:
             dweight = torch.zeros_like(weight)
             _triton_rms_norm_weight_bwd_kernel[(n_cols, )](
-                dx, x, dweight, weight, dout, rrms,
+                x, dweight, weight, dout, rrms,
                 n_rows, n_cols, eps,
-                dx.stride(0), x.stride(0), dout.stride(0), weight.stride(0),
+                x.stride(0), dout.stride(0), weight.stride(0),
                 ROW_BLOCK_SIZE,
             )
 
         x = x.view(*shape)
-        dx = dx.view(*shape)
         dout = dout.view(-1, shape[-1])
         return dx, dweight, None, None
     

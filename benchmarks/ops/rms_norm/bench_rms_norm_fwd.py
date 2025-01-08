@@ -1,6 +1,7 @@
 
 import torch
 import triton
+import os
 
 from ld_triton.ops.rms_norm.naive_rms_norm import naive_rms_norm
 from ld_triton.ops.rms_norm.triton_rms_norm import triton_rms_norm
@@ -42,5 +43,6 @@ def bench_rms_norm(M, N, dtype, provider, mode='backward', eps=1e-5, device='cud
 
     return gbps(ms), gbps(max_ms), gbps(min_ms)
 
+save_path = os.path.join(os.path.dirname(__file__), 'bench', torch.cuda.get_device_name(0), 'fwd')
 
-bench_rms_norm.run(show_plots=True, print_data=True)
+bench_rms_norm.run(print_data=True, save_path=save_path)
