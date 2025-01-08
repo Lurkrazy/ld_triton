@@ -1,10 +1,7 @@
 
 import torch
-from typing import Union, List, Optional
+from typing import Optional
 
-
-_shape_t = Union[int, List[int], torch.Size]
-    
 
 class _naive_rms_norm(torch.autograd.Function):
     @staticmethod
