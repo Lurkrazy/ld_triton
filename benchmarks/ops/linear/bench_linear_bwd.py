@@ -39,7 +39,7 @@ def benchmark(M, in_features, out_features, provider):
     if provider == 'triton':
         output = triton_linear(input, weight, bias)
         ms, min_ms, max_ms = triton.testing.do_bench(lambda: output.backward(doutput, retain_graph=True), quantiles=quantiles)
-    perf = lambda ms: (2 * M * in_features * out_features) * 1e-12 / (ms * 1e-3)
+    perf = lambda ms: (2 * M * in_features * out_features + 2 * M * in_features * out_features) * 1e-12 / (ms * 1e-3)
     return perf(ms), perf(max_ms), perf(min_ms)
 
 

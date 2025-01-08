@@ -37,7 +37,7 @@ def benchmark(M, N, K, provider):
     if provider == 'triton':
         c = triton_matmul(a, b)
         ms, min_ms, max_ms = triton.testing.do_bench(lambda: c.backward(dc, retain_graph=True), quantiles=quantiles)
-    perf = lambda ms: 2 * M * N * K * 1e-12 / (ms * 1e-3)
+    perf = lambda ms: (2 * M * N * K + 2 * M * N * K) * 1e-12 / (ms * 1e-3)
     return perf(ms), perf(max_ms), perf(min_ms)
 
 
