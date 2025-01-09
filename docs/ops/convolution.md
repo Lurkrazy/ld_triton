@@ -14,7 +14,7 @@ $\frac{\partial ax}{\partial x} = a$
 $\frac{\partial out(N_p, C_{out_q})}{\partial input(N_i, j)}$
 
 <p>
-$ = \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_q, k}) * input(N_p, k)}{\partial input(N_i,j)}$
+$= \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_q, k}) * input(N_p, k)}{\partial input(N_i,j)}$
 </p>
 
 ##### $N_p \neq N_i$
@@ -26,17 +26,17 @@ $\frac{\partial out(N_p, C_{out_q})}{\partial input(N_i,j)} = 0$
 $\frac{\partial out(N_p, C_{out_q})}{\partial input(N_i,j)}$
 
 <p>
-$ = \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_q, k}) * input(N_i, k)}{\partial input(N_i,j)}$
+$= \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_q, k}) * input(N_i, k)}{\partial input(N_i,j)}$
 </p>
 
-$ = weight(C_{out_q, j})$
+$= weight(C_{out_q, j})$
 
 ### weight求导
 
 $\frac{\partial out(N_p, C_{out_q})}{\partial weight(C_{out_i},j)}$
 
 <p>
-$ = \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_q, k}) * input(N_p, k)}{\partial weight(C_{out_i},j)}$
+$= \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_q, k}) * input(N_p, k)}{\partial weight(C_{out_i},j)}$
 </p>
 
 #### $C_{out_q} \neq C_{out_i}$
@@ -48,7 +48,7 @@ $\frac{\partial out(N_p, C_{out_q})}{\partial weight(C_{out_i},j)}=0$
 $\frac{\partial out(N_p, C_{out_q})}{\partial weight(C_{out_i},j)}$
 
 <p>
-$ = \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_i, k}) * input(N_p, k)}{\partial weight(C_{out_i},j)}$
+$= \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_i, k}) * input(N_p, k)}{\partial weight(C_{out_i},j)}$
 </p>
 
 $ = input(N_p, j)$
@@ -112,5 +112,3 @@ $=\sum_{N_p}df(N_p,C_{out_i}) * \frac {convolution(weight)_{(N_p,C_{out_i})}}{\p
 </p>
 
 $=\sum_{N_p}df(N_p,C_{out_i}) * input(N_p,j)$
-
-
