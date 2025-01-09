@@ -51,7 +51,7 @@ $\frac{\partial out(N_p, C_{out_q})}{\partial weight(C_{out_i},j)}$
 $= \frac {\partial \sum_{k=0}^{C_{in}-1} weight(C_{out_i, k}) * input(N_p, k)}{\partial weight(C_{out_i},j)}$
 </p>
 
-$ = input(N_p, j)$
+$= input(N_p, j)$
 
 ### bias求导
 
