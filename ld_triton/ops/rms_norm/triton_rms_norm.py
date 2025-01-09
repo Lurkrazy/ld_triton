@@ -76,7 +76,7 @@ def _triton_rms_norm_weight_bwd_kernel(
     dweight =  tl.sum(dout * u * x, axis=0)
 
     # it is very poor of performance to store the dweight in this way
-    tl.store(dweight_ptrs, dweight)
+    tl.store(dweight_ptrs, dweight, cache_modifier='.wt')
 
 class _triton_rms_norm(torch.autograd.Function):
     @staticmethod
