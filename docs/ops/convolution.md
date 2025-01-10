@@ -112,3 +112,27 @@ $=\sum_{N_p}df(N_p,C_{out_i}) * \frac {convolution(weight)_{(N_p,C_{out_i})}}{\p
 </p>
 
 $=\sum_{N_p}df(N_p,C_{out_i}) * input(N_p,j)$
+
+### bias链式法则
+
+#### 元素形式
+
+<p>
+$\frac{\partial f(convolution(bias)_{(N_k,C_{out_l})})}{\partial bias(C_{out_j})}$
+</p>
+
+<p>
+$=\sum_{N_p}\sum_{C_{out_q}}\frac{\partial f(convolution(bias)_{(N_k,C_{out_l})})}{\partial convolution(bias)_{(N_p,C_{out_q})}} * \frac {convolution(bias)_{(N_p,C_{out_q})}}{\partial bias(C_{out_j})}$
+</p>
+
+<p>
+$=\sum_{N_p}\sum_{C_{out_q}} df(N_p,C_{out_q}) * \frac {convolution(bias)_{(N_p,C_{out_q})}}{\partial bias(C_{out_j})}$
+</p>
+
+<p>
+$=\sum_{N_p} df(N_p,C_{out_j}) * \frac {convolution(bias)_{(N_p,C_{out_j})}}{\partial bias(C_{out_j})}$
+</p>
+
+<p>
+$=\sum_{N_p} df(N_p,C_{out_j})$
+</p>
