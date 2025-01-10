@@ -1,8 +1,6 @@
 # forward
 
-https://www.tensorflow.org/api_docs/python/tf/nn/conv2d
-
-$output_{bijk} = \sum_{di, dj, q} input_{b,strides[0] * i + di, strides[1] * j + dj,q} * filter_{di,dj,q,k}$
+[tensorflow conv2d](https://www.tensorflow.org/api_docs/python/tf/nn/conv2d)
 
 $output_{b,c_{out},h_{out},w_{out}} = \sum_{c_{in}, di, dj} input_{b,c_{in},strh * h_{out} + di, strw * w_{out} + dj} * weight_{c_{out}, c_{in}, di,dj}$
 
@@ -21,11 +19,11 @@ $\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in}
 $= \frac {\partial \sum_{c_{in1}, di, dj} input_{b1,c_{in1},strh * h_{out1} + di, strw * w_{out1} + dj} * weight_{c_{out1}, c_{in1}, di,dj}}{\partial input_{b,c_{in},h_{in},w_{in}}}$
 
 
-##### $b \neq b1$ or $h_{in} \notin [strh*h_{out1},strh*h_{out1}+R]$ or $w_{in} \notin [strw*w_{out1},strw*h_{out1}+S]$
+##### $b \neq b1$ or $h_{in} \notin (strh*h_{out1},strh*h_{out1}+R)$ or $w_{in} \notin (strw*w_{out1},strw*h_{out1}+S)$
 
 $\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in},h_{in},w_{in}}} = 0$
 
-##### $b = b1, h_{in} \in [strh*h_{out1},strh*h_{out1}+R], w_{in} \in [strw*w_{out1},strw*h_{out1}+S]$
+##### $b = b1, h_{in} \in (strh*h_{out1},strh*h_{out1}+R), w_{in} \in (strw*w_{out1},strw*h_{out1}+S)$
 
 $\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in},h_{in},w_{in}}}$
 
