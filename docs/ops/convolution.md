@@ -136,3 +136,10 @@ $=\sum_{N_p} df(N_p,C_{out_j}) * \frac {convolution(bias)_{(N_p,C_{out_j})}}{\pa
 <p>
 $=\sum_{N_p} df(N_p,C_{out_j})$
 </p>
+
+#### 矩阵形式
+
+$\frac{\partial f(convolution(bias))}{\partial bias}$
+
+$=sum(df, (dim(N_p)...))$
+
