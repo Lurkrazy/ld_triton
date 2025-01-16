@@ -81,6 +81,11 @@ $=\sum_{b1,c_{out1},h_{out1},w_{out1}} df_{b1,c_{out1},h_{out1},w_{out1}} * \fra
 
 $=\sum_{c_{out1},h_{out1},w_{out1}} df_{b,c_{out1},h_{out1},w_{out1}} * \frac{\partial output_{b,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in},h_{in},w_{in}}}$
 
+$=\sum_{c_{out1},h_{out1},w_{out1}} df_{b,c_{out1},h_{out1},w_{out1}} * \frac {\partial \sum_{di1, dj1} input_{b,c_{in},strh * h_{out1} + di1, strw * w_{out1} + dj1} * weight_{c_{out1}, c_{in}, di1,dj1}}{\partial input_{b,c_{in},h_{in},w_{in}}}$
+
+$=\sum_{c_{out1},h_{out1},w_{out1}} df_{b,c_{out1},h_{out1},w_{out1}} * \frac {\partial \sum_{di1, dj1} input_{b,c_{in},strh * h_{out1} + di1, strw * w_{out1} + dj1} * weight_{c_{out1}, c_{in}, di1,dj1}}{\partial input_{b,c_{in},strh * h_{out} + di,strw * w_{out} + dj}}$
+
+
 #### 矩阵形式
 
 ### weight链式法则
