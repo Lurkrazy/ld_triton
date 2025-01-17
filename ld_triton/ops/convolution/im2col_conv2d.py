@@ -2,6 +2,7 @@
 import torch
 import pytest
 
+
 def im2col_fwd(input, N, C, H, W, R, S, stride, padding, dilation):
     str_h, str_w = stride
     pad_h, pad_w = padding
@@ -75,9 +76,9 @@ class _im2col_conv2d(torch.autograd.Function):
                 input: torch.Tensor,
                 weight: torch.Tensor,
                 bias: torch.Tensor = None,
-                stride: int = 1,
-                padding: int = 0,
-                dilation: int = 1
+                stride: int = (1, 1),
+                padding: int = (0, 0),
+                dilation: int = (1, 1)
     ):
         assert input.is_contiguous()
         N, C, H, W = input.shape
@@ -89,11 +90,11 @@ class _im2col_conv2d(torch.autograd.Function):
         P = (H + 2 * pad_h - dil_h * (R - 1) - 1) // str_h + 1
         Q = (W + 2 * pad_w - dil_w * (S - 1) - 1) // str_w + 1
 
-        im2col_input = im2col_fwd(input, N, C, H, W, R, S, (str_h, str_w), (pad_h, pad_w), (dil_h, dil_w))
-        im2col_weight = weight.view(K, -1).t()
+        im2col_input = im2col_fwd(input, N, C, H, W, R, S, (str_h, str_w), (pad_h, pad_w), (dil_h, dil_w)) # [N, C, H, W] -> [N*P*Q, C*R*S]
+        im2col_weight = weight.view(K, -1) # [K, C, R, S] -> [K, C*R*S]
 
-        output = im2col_input @ im2col_weight
-        output = output.view(N, P, Q, K).permute(0, 3, 1, 2).contiguous() + bias.view(1, -1, 1, 1)
+        output = im2col_input @ im2col_weight.t() # GEMM_M=N*P*Q, GEMM_N=K, GEMM_K=C*R*S
+        output = output.view(N, P, Q, K).permute(0, 3, 1, 2).contiguous() + bias.view(1, -1, 1, 1) # [N*P*Q, K] -> [N, K, P, Q]
 
         ctx.save_for_backward(input, weight)
         ctx.N = N
@@ -117,8 +118,6 @@ class _im2col_conv2d(torch.autograd.Function):
         input, weight = ctx.saved_tensors
 
         N, C, H, W = ctx.N, ctx.C, ctx.H, ctx.W
-        P = ctx.P
-        Q = ctx.Q
         K = ctx.K
         R, S = ctx.R, ctx.S
         stride = ctx.stride
@@ -129,17 +128,15 @@ class _im2col_conv2d(torch.autograd.Function):
         if input.requires_grad:
             im2col_doutput = im2col_input_bwd(doutput, N, C, H, W, K, R, S, stride, padding, dilation) # [N, K, P, Q] -> [N*H*W, K*R*S]
             im2col_weight = weight.permute(1, 0, 2, 3).reshape(C, -1).contiguous() # [K, C, R, S] -> [C, K*R*S]
-
-            im2col_dinput = im2col_doutput @ im2col_weight.t() # M=N*H*W, N=C, K=K*R*S
-
-            dinput = im2col_dinput.view(N, H, W, C).permute(0, 3, 1, 2).contiguous()
+            im2col_dinput = im2col_doutput @ im2col_weight.t() # GEMM_M=N*H*W, GEMM_N=C, GEMM_K=K*R*S
+            dinput = im2col_dinput.view(N, H, W, C).permute(0, 3, 1, 2).contiguous() # [N*H*W, C] -> [N, C, H, W]
 
         dweight = None
         if weight.requires_grad:
             im2col_input = im2col_fwd(input, N, C, H, W, R, S, stride, padding, dilation) # [N, C, H, W] -> [N*P*Q, C*R*S]
             im2col_doutput = doutput.permute(0, 2, 3, 1).contiguous().view(-1, K) # [N, P, Q, K] -> [N*P*Q, K]
-            im2col_dweight = im2col_doutput.t() @ im2col_input # M=K, N=C*R*S, K=N*P*Q
-            dweight = im2col_dweight.view(K, C, R, S)
+            im2col_dweight = im2col_doutput.t() @ im2col_input # GEMM_M=K, GEMM_N=C*R*S, GEMM_K=N*P*Q
+            dweight = im2col_dweight.view(K, C, R, S) # [K, C*R*S] -> [K, C, R, S]
 
         dbias = None
         bias_requires_grad = ctx.bias_requires_grad
@@ -158,9 +155,10 @@ im2col_conv2d = _im2col_conv2d.apply
                           (2, 7, 8, 8, 5, 3, 3, 2, 2, 2),
                           ])
 def test_conv2d(N, C, H, W, K, R, S, stride, padding, dilation):
-    input = torch.randn(N, C, H, W, requires_grad=True, device='cpu', dtype=torch.float16)
-    weight = torch.randn(K, C, R, S, requires_grad=True, device='cpu', dtype=torch.float16)
-    bias = torch.randn(K, requires_grad=True, device='cpu', dtype=torch.float16)
+    factory_kwargs = {'device': 'cuda', 'dtype': torch.float16}
+    input = torch.randn(N, C, H, W, requires_grad=True, **factory_kwargs)
+    weight = torch.randn(K, C, R, S, requires_grad=True, **factory_kwargs)
+    bias = torch.randn(K, requires_grad=True, **factory_kwargs)
     stride = (stride, stride)
     padding = (padding, padding)
     dilation = (dilation, dilation)
