@@ -18,12 +18,13 @@ $\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in}
 
 $= \frac {\partial \sum_{c_{in1}, di, dj} input_{b1,c_{in1},strh * h_{out1} + di, strw * w_{out1} + dj} * weight_{c_{out1}, c_{in1}, di,dj}}{\partial input_{b,c_{in},h_{in},w_{in}}}$
 
+##### $b \neq b1$ or 
+<p> $h_{in} \notin (strh*h_{out1},strh*h_{out1}+R) or w_{in} \notin (strw*w_{out1},strw*h_{out1}+S)$  </p>
 
-##### $b \neq b1$ or $h_{in} \notin (strh*h_{out1},strh*h_{out1}+R)$ or $w_{in} \notin (strw*w_{out1},strw*h_{out1}+S)$
+$\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in},h_{in},w_{in}}} = 0$ 
 
-$\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in},h_{in},w_{in}}} = 0$
-
-##### $b = b1, h_{in} \in (strh*h_{out1},strh*h_{out1}+R), w_{in} \in (strw*w_{out1},strw*h_{out1}+S)$
+##### $b = b1$ and 
+<p> $h_{in} \in (strh*h_{out1},strh*h_{out1}+R), w_{in} \in (strw*w_{out1},strw*h_{out1}+S)$ </p>
 
 $\frac{\partial output_{b1,c_{out1},h_{out1},w_{out1}}}{\partial input_{b,c_{in},h_{in},w_{in}}}$
 
@@ -134,3 +135,13 @@ $\frac{\partial f(convolution(bias))}{\partial bias}$
 
 $=sum(df, (dim(N_p)...))$
 
+
+# reference
+
+https://deeplearning.cs.cmu.edu/F21/document/recitation/Recitation5/CNN_Backprop_Recitation_5_F21.pdf
+
+https://github.com/BVLC/caffe/blob/master/src/caffe/layers/conv_layer.cpp
+
+https://github.com/pjreddie/darknet/blob/master/src/convolutional_layer.c
+
+https://github.com/NVIDIA/cutlass/blob/main/media/docs/implicit_gemm_convolution.md
