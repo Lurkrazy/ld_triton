@@ -88,7 +88,7 @@ def _implicit_gemm_conv2d_input_bwd(doutput, weight, N, C, H, W, K, R, S, stride
     return output
 
 
-def _implicit_gemm_conv2d_weight_fwd(doutput, input, N, C, H, W, K, R, S, stride, padding, dilation):
+def _implicit_gemm_conv2d_weight_bwd(doutput, input, N, C, H, W, K, R, S, stride, padding, dilation):
         str_h, str_w = stride
         pad_h, pad_w = padding
         dil_h, dil_w = dilation
@@ -159,7 +159,7 @@ class _implicit_gemm_conv2d_func(torch.autograd.Function):
 
         dweight = None
         if weight.requires_grad:
-            dweight = _implicit_gemm_conv2d_weight_fwd(doutput, input, N, C, H, W, K, R, S, stride, padding, dilation)
+            dweight = _implicit_gemm_conv2d_weight_bwd(doutput, input, N, C, H, W, K, R, S, stride, padding, dilation)
 
         dbias = None
         bias_requires_grad = ctx.bias_requires_grad
