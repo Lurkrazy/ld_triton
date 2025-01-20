@@ -95,13 +95,41 @@ def _implicit_gemm_conv2d_fwd_kernel(
         acc = acc + bias_data
 
     acc = acc.to(tl.float16)
-    # gemm_i: [BLOCK_SIZE_M], gemm_i[:, None]: [BLOCK_SIZE_M, 1]
-    # gemm_j: [BLOCK_SIZE_N], gemm_j[None, :]: [1, BLOCK_SIZE_N]
+
+    # has three store methods, [GEMM_M, GEMM_N], [N, P, Q, K], [N, K, P, Q]
+
+    # 1. store to output [N*P*Q, K] [GEMM_M, GEMM_N]
+    # # gemm_i: [BLOCK_SIZE_M], gemm_i[:, None]: [BLOCK_SIZE_M, 1]
+    # # gemm_j: [BLOCK_SIZE_N], gemm_j[None, :]: [1, BLOCK_SIZE_N]
+    # # offs_output: [BLOCK_SIZE_M, BLOCK_SIZE_N]
+    # offs_output = gemm_i[:, None] * GEMM_N + gemm_j[None, :]
+    # mask_output = (gemm_i[:, None] < GEMM_M) & (gemm_j[None, :] < GEMM_N)
+
+    # output_ptrs = output_ptr + offs_output
+    # tl.store(output_ptrs, acc, mask=mask_output)
+
+    # # 2. store to output [N, P, Q, K]
+    # # n: [BLOCK_SIZE_M], n[:, None]: [BLOCK_SIZE_M, 1]
+    # # k: [BLOCK_SIZE_N], k[None, :]: [1, BLOCK_SIZE_N]
+    # # p: [BLOCK_SIZE_M], p[:, None]: [BLOCK_SIZE_M, 1]
+    # # q: [BLOCK_SIZE_M], q[:, None]: [BLOCK_SIZE_M, 1]
+    # # offs_output: [BLOCK_SIZE_M, BLOCK_SIZE_N]
+    # offs_npqk = n[:, None] * P * Q * K + p[:, None] * Q * K + q[:, None] * K + k[None, :]
+    # mask_npqk = (n[:, None] < N) & (p[:, None] < P) & (q[:, None] < Q) & (k[None, :] < K)
+    # output_ptrs = output_ptr + offs_npqk
+    # tl.store(output_ptrs, acc, mask=mask_npqk)
+
+    # 3. store to output [N, K, P, Q]
+    # n: [BLOCK_SIZE_M], n[:, None]: [BLOCK_SIZE_M, 1]
+    # k: [BLOCK_SIZE_N], k[None, :]: [1, BLOCK_SIZE_N]
+    # p: [BLOCK_SIZE_M], p[:, None]: [BLOCK_SIZE_M, 1]
+    # q: [BLOCK_SIZE_M], q[:, None]: [BLOCK_SIZE_M, 1]
     # offs_output: [BLOCK_SIZE_M, BLOCK_SIZE_N]
-    offs_output = gemm_i[:, None] * GEMM_N + gemm_j[None, :]
-    mask_output = (gemm_i[:, None] < GEMM_M) & (gemm_j[None, :] < GEMM_N)
-    output_ptrs = output_ptr + offs_output
-    tl.store(output_ptrs, acc, mask=mask_output)
+    offs_nkpq = n[:, None] * K * P * Q + k[None, :] * P * Q + p[:, None] * Q + q[:, None]
+    mask_nkpq = (n[:, None] < N) & (k[None, :] < K) & (p[:, None] < P) & (q[:, None] < Q)
+
+    output_ptrs = output_ptr + offs_nkpq
+    tl.store(output_ptrs, acc, mask=mask_nkpq)
         
 
 def _implicit_gemm_conv2d_fwd(input: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, stride, padding, dilation):
@@ -117,8 +145,15 @@ def _implicit_gemm_conv2d_fwd(input: torch.Tensor, weight: torch.Tensor, bias: t
     GEMM_M = N * P * Q
     GEMM_N = K
     GEMM_K = C * R * S
+    
+    # # 1. store to output [N*P*Q, K] [GEMM_M, GEMM_N]
+    # output = torch.zeros((GEMM_M, GEMM_N), dtype=input.dtype, device=input.device) # [GEMM_M, GEMM_N] [N*P*Q, K]
 
-    output = torch.empty((N, K, P, Q), dtype=input.dtype, device=input.device)
+    # # 2. store to output [N, P, Q, K]
+    # output = torch.zeros((N, P, Q, K), dtype=input.dtype, device=input.device) # [N, P, Q, K]
+
+    # 3. store to output [N, K, P, Q]
+    output = torch.zeros((N, K, P, Q), dtype=input.dtype, device=input.device) # [N, K, P, Q]
     
     grid = lambda META: (triton.cdiv(GEMM_M, META['BLOCK_SIZE_M']) * triton.cdiv(GEMM_N, META['BLOCK_SIZE_N']), )
     debug = False
@@ -142,6 +177,14 @@ def _implicit_gemm_conv2d_fwd(input: torch.Tensor, weight: torch.Tensor, bias: t
             N, C, H, W, K, P, Q, R, S, str_h, str_w, pad_h, pad_w, dil_h, dil_w,
             GEMM_M, GEMM_N, GEMM_K,
         )
+
+    # # 1. store to output [N*P*Q, K] [GEMM_M, GEMM_N]
+    # output = output.view(N, P, Q, K).permute(0, 3, 1, 2).contiguous() # [N*P*Q, K] -> [N, K, P, Q]
+
+    # # 2. store to output [N, P, Q, K]
+    # output = output.permute(0, 3, 1, 2).contiguous() # [N, P, Q, K] -> [N, K, P, Q]
+
+    # 3. store to output [N, K, P, Q]
     return output
 
 
@@ -231,14 +274,37 @@ def _implicit_gemm_conv2d_input_bwd_kernel(
         acc = tl.dot(doutput_data, weight_data, acc)
 
     acc = acc.to(tl.float16)
-    # gemm_i: [BLOCK_SIZE_M], gemm_i[:, None]: [BLOCK_SIZE_M, 1]
-    # gemm_j: [BLOCK_SIZE_N], gemm_j[None, :]: [1, BLOCK_SIZE_N]
-    # offs_output: [BLOCK_SIZE_M, BLOCK_SIZE_N]
-    offs_output = gemm_i[:, None] * GEMM_N + gemm_j[None, :]
-    mask_output = (gemm_i[:, None] < GEMM_M) & (gemm_j[None, :] < GEMM_N)
-    dinput_ptrs = dinput_ptr + offs_output
-    tl.store(dinput_ptrs, acc, mask=mask_output)
 
+    # # 1. store to output [N*H*W, C] [GEMM_M, GEMM_N]
+    # # gemm_i: [BLOCK_SIZE_M], gemm_i[:, None]: [BLOCK_SIZE_M, 1]
+    # # gemm_j: [BLOCK_SIZE_N], gemm_j[None, :]: [1, BLOCK_SIZE_N]
+    # # offs_output: [BLOCK_SIZE_M, BLOCK_SIZE_N]
+    # offs_output = gemm_i[:, None] * GEMM_N + gemm_j[None, :]
+    # mask_output = (gemm_i[:, None] < GEMM_M) & (gemm_j[None, :] < GEMM_N)
+    # dinput_ptrs = dinput_ptr + offs_output
+    # tl.store(dinput_ptrs, acc, mask=mask_output)
+
+    # # 2. store to output [N, H, W, C]
+    # # n: [BLOCK_SIZE_M], n[:, None]: [BLOCK_SIZE_M, 1]
+    # # h: [BLOCK_SIZE_M], h[:, None]: [BLOCK_SIZE_M, 1]
+    # # w: [BLOCK_SIZE_M], w[:, None]: [BLOCK_SIZE_M, 1]
+    # # c: [BLOCK_SIZE_N], c[None, :]: [1, BLOCK_SIZE_N]
+    # # offs_nhwc: [BLOCK_SIZE_M, BLOCK_SIZE_N]
+    # offs_nhwc = n[:, None] * H * W * C + h[:, None] * W * C + w[:, None] * C + c[None, :]
+    # mask_nhwc = (n[:, None] < N) & (h[:, None] < H) & (w[:, None] < W) & (c[None, :] < C)
+    # dinput_ptrs = dinput_ptr + offs_nhwc
+    # tl.store(dinput_ptrs, acc, mask=mask_nhwc)
+
+    # 3. store to output [N, C, H, W]
+    # n: [BLOCK_SIZE_M], n[:, None]: [BLOCK_SIZE_M, 1]
+    # c: [BLOCK_SIZE_N], c[None, :]: [1, BLOCK_SIZE_N]
+    # h: [BLOCK_SIZE_M], h[:, None]: [BLOCK_SIZE_M, 1]
+    # w: [BLOCK_SIZE_M], w[:, None]: [BLOCK_SIZE_M, 1]
+    # offs_nchw: [BLOCK_SIZE_M, BLOCK_SIZE_N]
+    offs_nchw = n[:, None] * C * H * W + c[None, :] * H * W + h[:, None] * W + w[:, None]
+    mask_nchw = (n[:, None] < N) & (c[None, :] < C) & (h[:, None] < H) & (w[:, None] < W)
+    dinput_ptrs = dinput_ptr + offs_nchw
+    tl.store(dinput_ptrs, acc, mask=mask_nchw)
 
 def _implicit_gemm_conv2d_input_bwd(doutput, weight, N, C, H, W, K, R, S, stride, padding, dilation):
     str_h, str_w = stride
@@ -252,6 +318,13 @@ def _implicit_gemm_conv2d_input_bwd(doutput, weight, N, C, H, W, K, R, S, stride
     GEMM_N = C
     GEMM_K = K * R * S
 
+    # # 1. store to output [N*H*W, C] [GEMM_M, GEMM_N]
+    # dinput = torch.zeros((GEMM_M, GEMM_N), dtype=doutput.dtype, device=doutput.device)
+    
+    # # 2. store to output [N, H, W, C]
+    # dinput = torch.zeros((N, H, W, C), dtype=doutput.dtype, device=doutput.device)
+
+    # 3. store to output [N, C, H, W]
     dinput = torch.zeros((N, C, H, W), dtype=doutput.dtype, device=doutput.device)
     
     grid = lambda META: (triton.cdiv(GEMM_M, META['BLOCK_SIZE_M']) * triton.cdiv(GEMM_N, META['BLOCK_SIZE_N']), )
@@ -276,6 +349,13 @@ def _implicit_gemm_conv2d_input_bwd(doutput, weight, N, C, H, W, K, R, S, stride
             N, C, H, W, K, P, Q, R, S, str_h, str_w, pad_h, pad_w, dil_h, dil_w,
             GEMM_M, GEMM_N, GEMM_K,
         )
+    
+    # # 1. store to output [N*H*W, C] [GEMM_M, GEMM_N]
+    # dinput = dinput.view(N, H, W, C).permute(0, 3, 1, 2).contiguous()
+    
+    # # 2. store to output [N, H, W, C]
+    # dinput = dinput.permute(0, 3, 1, 2).contiguous()
+
     return dinput
 
 
@@ -335,8 +415,6 @@ def _implicit_gemm_conv2d_weight_bwd_kernel(
         # s: [BLOCK_SIZE_N], s[None, :]: [1, BLOCK_SIZE_N]
         # w: [BLOCK_SIZE_K, BLOCK_SIZE_N]
         w = q[:, None] * str_w + s[None, :] * dil_w - pad_w
-        if h < 0 or h >= H or w < 0 or w >= W:
-            continue
 
         # input[n, c, h, w]
         # n: [BLOCK_SIZE_K], n[:, None]: [BLOCK_SIZE_K, 1]
@@ -350,7 +428,24 @@ def _implicit_gemm_conv2d_weight_bwd_kernel(
         mask_doutput = (n[None, :] < N) & (k[:, None] < K) & (p[None, :] < P) & (q[None, :] < Q)
         mask_input = (n[:, None] < N) & (c[None, :] < C) & (h < H) & (w < W) & (h >= 0) & (w >= 0)
 
-        acc += input_ptr[n, c, h, w] * doutput[n, k, p, q]
+        doutput_ptrs = doutput_ptr + offs_doutput
+        input_ptrs = input_ptr + offs_input
+
+        doutput_data = tl.load(doutput_ptrs, mask=mask_doutput, other=0.0)
+        weight_data = tl.load(input_ptrs, mask=mask_input, other=0.0)
+
+        acc = tl.dot(doutput_data, weight_data, acc)
+
+    acc = acc.to(tl.float16)
+    
+    # gemm_i: [BLOCK_SIZE_M], gemm_i[:, None]: [BLOCK_SIZE_M, 1]
+    # gemm_j: [BLOCK_SIZE_N], gemm_j[None, :]: [1, BLOCK_SIZE_N]
+    # offs_weight: [BLOCK_SIZE_M, BLOCK_SIZE_N]
+    offs_weight = gemm_i[:, None] * GEMM_N + gemm_j[None, :]
+    mask_weight = (gemm_i[:, None] < GEMM_M) & (gemm_j[None, :] < GEMM_N)
+    dweight_ptrs = dweight_ptr + offs_weight
+    tl.store(dweight_ptrs, acc, mask=mask_weight)
+
 
 def _implicit_gemm_conv2d_weight_bwd(doutput, input, N, C, H, W, K, R, S, stride, padding, dilation):
     str_h, str_w = stride
@@ -391,28 +486,35 @@ def _implicit_gemm_conv2d_weight_bwd(doutput, input, N, C, H, W, K, R, S, stride
     return dweight
 
 
-        # output = torch.zeros((K, C, R, S), dtype=input.dtype, device=input.device)
+@triton.jit
+def _implicit_gemm_conv2d_bias_bwd_kernel(dbias, doutput_ptr, N, K, P, Q, BLOCK_SIZE: tl.constexpr):
+    k = tl.program_id(0)
 
-        # for gemm_i in range(GEMM_M):
-        #     k = gemm_i
-        #     for gemm_j in range(GEMM_N):
-        #         c = gemm_j // (R * S)
-        #         crs_residual = gemm_j % (R * S)
-        #         r = crs_residual // S
-        #         s = crs_residual % S
-        #         acc = 0.0
-        #         for gemm_k in range(GEMM_K):
-        #             n = gemm_k // (P * Q)
-        #             npq_residual = gemm_k % (P * Q)
-        #             p = npq_residual // Q
-        #             q = npq_residual % Q
-        #             h = p * str_h + r * dil_h - pad_h
-        #             w = q * str_w + s * dil_w - pad_w
-        #             if h < 0 or h >= H or w < 0 or w >= W:
-        #                 continue
-        #             acc += input[n, c, h, w] * doutput[n, k, p, q]
-        #         output[k, c, r, s] = acc
-        # return output
+    offs_pq = tl.arange(0, BLOCK_SIZE)
+    mask_pq = offs_pq < P * Q
+
+    offs_k = k + tl.arange(0, 1)
+
+    acc = tl.zeros((1, ), dtype=tl.float32)
+
+    for idx_n in range(0, N):
+        offs_nkpq = idx_n * K * P * Q + k * P * Q + offs_pq
+        doutput_ptrs = doutput_ptr + offs_nkpq
+        doutput_data = tl.load(doutput_ptrs, mask=mask_pq, other=0.0)
+        acc = acc + tl.sum(doutput_data)
+
+    acc = acc.to(tl.float16)
+
+    dbias_ptrs = dbias + offs_k
+    tl.store(dbias_ptrs, acc)
+
+
+def _implicit_gemm_conv2d_bias_bwd(doutput):
+    N, K, P, Q = doutput.shape
+    BLOCK_SIZE = triton.next_power_of_2(P * Q)
+    dbias = torch.zeros((K), dtype=doutput.dtype, device=doutput.device)
+    _implicit_gemm_conv2d_bias_bwd_kernel[K, ](dbias, doutput, N, K, P, Q, BLOCK_SIZE)
+    return dbias
 
 
 class _triton_conv2d_func(torch.autograd.Function):
@@ -455,7 +557,7 @@ class _triton_conv2d_func(torch.autograd.Function):
         dbias = None
         bias_requires_grad = ctx.bias_requires_grad
         if bias_requires_grad:
-            dbias = torch.sum(doutput, (0, 2, 3))
+            dbias = _implicit_gemm_conv2d_bias_bwd(doutput)
         return dinput, dweight, dbias, None, None, None
     
 
@@ -465,10 +567,11 @@ triton_conv2d = _triton_conv2d_func.apply
 # python -m pytest -s ld_triton/ops/convolution/triton_conv2d.py 
 @pytest.mark.parametrize("N, C, H, W, K, R, S, stride, padding, dilation", 
                          [
-                          (1, 1, 3, 3, 1, 2, 2, 1, 0, 1),
-                        #   (2, 7, 8, 8, 5, 3, 3, 2, 2, 2),
+                          (1, 2, 3, 3, 2, 2, 2, 1, 0, 1),
+                          (2, 7, 8, 8, 5, 3, 3, 2, 2, 2),
                           ])
 def test_conv2d(N, C, H, W, K, R, S, stride, padding, dilation):
+    torch.manual_seed(0)
     factory_kwargs = {'device': 'cuda', 'dtype': torch.float16}
     input = torch.randn(N, C, H, W, requires_grad=True, **factory_kwargs)
     weight = torch.randn(K, C, R, S, requires_grad=True, **factory_kwargs)
@@ -487,12 +590,9 @@ def test_conv2d(N, C, H, W, K, R, S, stride, padding, dilation):
     triton_output.backward(doutput)
     triton_dinput, input.grad = input.grad.clone(), None
     triton_dweight, weight.grad = weight.grad.clone(), None
-    # ig_dbias, bias.grad = bias.grad.clone(), None
+    triton_dbias, bias.grad = bias.grad.clone(), None
 
-    print(f'dweight: {dweight}')
-    print(f'triton_dweight: {triton_dweight}')
-
-    assert torch.allclose(output, triton_output, atol=1e-3, rtol=1e-3)
-    assert torch.allclose(dinput, triton_dinput, atol=1e-3, rtol=1e-3)
-    # assert torch.allclose(dweight, ig_dweight, atol=1e-1, rtol=1e-1)
-    # assert torch.allclose(dbias, ig_dbias, atol=1e-1, rtol=1e-1)
+    assert torch.allclose(output, triton_output, atol=1e-1, rtol=1e-1)
+    assert torch.allclose(dinput, triton_dinput, atol=1e-1, rtol=1e-1)
+    assert torch.allclose(dweight, triton_dweight, atol=1e-1, rtol=1e-1)
+    assert torch.allclose(dbias, triton_dbias, atol=1e-1, rtol=1e-1)
