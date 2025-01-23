@@ -2,12 +2,6 @@
 import torch
 import pytest
 
-torch.nn.Conv2d
-def to_dense(features: torch.Tensor, indices: torch.Tensor, H, W, C):
-    out = torch.zeros([H, W, C], dtype=features.dtype, device=features.device)
-    out[indices[:, 0], indices[:, 1]] = features
-    return out
-
 
 # [SECOND: Sparsely Embedded Convolutional Detection] https://www.mdpi.com/1424-8220/18/10/3337/pdf?version=1538798176
 class _naive_spconv2d(torch.autograd.Function):
