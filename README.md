@@ -18,3 +18,4 @@ triton ops
 
 [softmax](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/softmax.md)
 
+spcon2d
