@@ -1,7 +1,6 @@
 
 import torch
 import pytest
-torch.nn.functional.conv2d
 
 
 class _naive_conv2d(torch.autograd.Function):
@@ -45,7 +44,10 @@ class _naive_conv2d(torch.autograd.Function):
 
 
         ctx.save_for_backward(input, weight)
-        ctx.bias_requires_grad = bias.requires_grad
+        if bias is None:
+            ctx.bias_requires_grad = False
+        else:
+            ctx.bias_requires_grad = bias.requires_grad
         ctx.stride = stride
         ctx.padding = padding
         ctx.dilation = dilation
