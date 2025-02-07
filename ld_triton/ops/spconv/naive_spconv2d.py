@@ -1,6 +1,5 @@
 
 import torch
-import pytest
 
 
 # [SECOND: Sparsely Embedded Convolutional Detection] https://www.mdpi.com/1424-8220/18/10/3337/pdf?version=1538798176
@@ -14,15 +13,20 @@ class _naive_spconv2d(torch.autograd.Function):
                 batch_size,
                 weight: torch.Tensor,
                 bias: torch.Tensor = None,
-                stride: int = (1, 1, 1),
-                padding: int = (0, 0, 0),
-                dilation: int = (1, 1, 1),
+                stride: int = (1, 1),
+                padding: int = (0, 0),
+                dilation: int = (1, 1),
                 memory_format: str = 'channel_last'):
+        assert memory_format == 'channel_last'
         str_h, str_w = stride
         pad_h, pad_w = padding
         dil_h, dil_w = dilation
         num_points = len(features)
-        K, R, S, C = weight.shape
+        
+        if memory_format == 'channel_first':
+            K, C, R, S = weight.shape
+        elif memory_format == 'channel_last':
+            K, R, S, C = weight.shape
         P = (H + 2 * pad_h - dil_h * (R - 1) - 1) // str_h + 1
         Q = (W + 2 * pad_w - dil_w * (S - 1) - 1) // str_w + 1
 
