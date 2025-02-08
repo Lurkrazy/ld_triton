@@ -4,7 +4,7 @@ import pytest
 from ld_triton.modules.spconv.utils import SparseConvTensor
 from ld_triton.modules.spconv.naive_spconv2d import NaiveSparseConv2d
 from ld_triton.modules.spconv.naive_spconv3d import NaiveSparseConv3d
-from ld_triton.modules.spconv.naive_submconv2d import NaiveSubMConv2d
+from ld_triton.modules.spconv.naive_submconv2d import NaiveSubMConv2d, NaiveSubMConv2d_1
 from ld_triton.modules.spconv.naive_submconv3d import NaiveSubMConv3d
 
 
@@ -323,12 +323,41 @@ def test_submconv2d_0(batch_size, C, H, W, K, R, S, stride, padding, dilation):
     naive_dfeatures, x_sp.features.grad = x_sp.features.grad.clone(), None
     naive_dx_sp = x_sp.replace_feature(naive_dfeatures)
 
-    assert torch.allclose(model.net.weight.to('cpu'), naive_model.net.weight.to('cpu'))
-    assert torch.allclose(model.net.bias.to('cpu'), naive_model.net.bias.to('cpu'))
+    class NaiveNet_1(torch.nn.Module):
+        def __init__(self):
+            super(NaiveNet_1, self).__init__()
+            self.net = NaiveSubMConv2d_1(C, K, R, stride, padding, dilation, bias=True)
+
+        def forward(self, x: SparseConvTensor):
+            x = self.net(x)
+            return x
+        
+    naive_model_1 = NaiveNet_1().to('cpu')
+    x = x.to('cpu')
+    x_sp = SparseConvTensor.from_dense(x)
+    x_sp.features = x_sp.features.clone().detach().requires_grad_(True)
+    naive_model_1.net.weight = torch.nn.Parameter(weight.to('cpu'))
+    naive_model_1.net.bias = torch.nn.Parameter(bias.to('cpu'))
+
+    naive_out_1 = naive_model_1(x_sp)
+
+    loss_fn = torch.nn.MSELoss()
+    y_sp_features = y_sp_features.to('cpu')
+    loss = loss_fn(y_sp_features, naive_out_1.features)
+    loss.backward()
+    naive_dweight_1, naive_model_1.net.weight.grad = naive_model_1.net.weight.grad.clone(), None
+    naive_dbias_1, naive_model_1.net.bias.grad = naive_model_1.net.bias.grad.clone(), None
+    naive_dfeatures_1, x_sp.features.grad = x_sp.features.grad.clone(), None
+    naive_dx_sp_1 = x_sp.replace_feature(naive_dfeatures_1)
+
     assert torch.allclose(out.dense().to('cpu'), naive_out.dense().to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(out.dense().to('cpu'), naive_out_1.dense().to('cpu'), rtol=1e-3, atol=1e-3)
     assert torch.allclose(dweight.to('cpu'), naive_dweight.to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(dweight.to('cpu'), naive_dweight_1.to('cpu'), rtol=1e-3, atol=1e-3)
     assert torch.allclose(dbias.to('cpu'), naive_dbias.to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(dbias.to('cpu'), naive_dbias_1.to('cpu'), rtol=1e-3, atol=1e-3)
     assert torch.allclose(dx_sp.dense().to('cpu'), naive_dx_sp.dense().to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(dx_sp.dense().to('cpu'), naive_dx_sp_1.dense().to('cpu'), rtol=1e-3, atol=1e-3)
 
 
 # python -m pytest -W ignore::DeprecationWarning -W ignore::FutureWarning -s tests/modules/test_spconv.py -k test_submconv2d_1
@@ -420,15 +449,44 @@ def test_submconv2d_1(batch_size, C, K, R, S, stride, padding, dilation):
     naive_dfeatures, x_sp.features.grad = x_sp.features.grad.clone(), None
     naive_dx_sp = x_sp.replace_feature(naive_dfeatures)
 
+    class NaiveNet_1(torch.nn.Module):
+        def __init__(self):
+            super(NaiveNet_1, self).__init__()
+            self.net = NaiveSubMConv2d_1(C, K, R, stride, padding, dilation, bias=True)
+
+        def forward(self, x: SparseConvTensor):
+            x = self.net(x)
+            return x
+        
+    naive_model_1 = NaiveNet_1().to('cpu')
+
+    x_sp = SparseConvTensor(features.to('cpu'), indices.to('cpu'), (H, W), batch_size)
+    x_sp.features = x_sp.features.clone().detach().requires_grad_(True)
+    naive_model_1.net.weight = torch.nn.Parameter(weight.to('cpu'))
+    naive_model_1.net.bias = torch.nn.Parameter(bias.to('cpu'))
+
+    naive_out_1 = naive_model_1(x_sp)
+
+    loss_fn = torch.nn.MSELoss()
+    y_sp_features = y_sp_features.to('cpu')
+    loss = loss_fn(y_sp_features, naive_out_1.features)
+    loss.backward()
+    naive_dweight_1, naive_model_1.net.weight.grad = naive_model_1.net.weight.grad.clone(), None
+    naive_dbias_1, naive_model_1.net.bias.grad = naive_model_1.net.bias.grad.clone(), None
+    naive_dfeatures_1, x_sp.features.grad = x_sp.features.grad.clone(), None
+    naive_dx_sp_1 = x_sp.replace_feature(naive_dfeatures_1)
+
     assert torch.allclose(model.net.weight.to('cpu'), naive_model.net.weight.to('cpu'))
     assert torch.allclose(model.net.bias.to('cpu'), naive_model.net.bias.to('cpu'))
-    torch.set_printoptions(threshold=torch.inf)
-    
-    # print(f'naive_out: {naive_out.dense().to("cpu")}')
+
     assert torch.allclose(out.dense().to('cpu'), naive_out.dense().to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(out.dense().to('cpu'), naive_out_1.dense().to('cpu'), rtol=1e-3, atol=1e-3)
     assert torch.allclose(dweight.to('cpu'), naive_dweight.to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(dweight.to('cpu'), naive_dweight_1.to('cpu'), rtol=1e-3, atol=1e-3)
     assert torch.allclose(dbias.to('cpu'), naive_dbias.to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(dbias.to('cpu'), naive_dbias_1.to('cpu'), rtol=1e-3, atol=1e-3)
     assert torch.allclose(dx_sp.dense().to('cpu'), naive_dx_sp.dense().to('cpu'), rtol=1e-3, atol=1e-3)
+    assert torch.allclose(dx_sp.dense().to('cpu'), naive_dx_sp_1.dense().to('cpu'), rtol=1e-3, atol=1e-3)
 
 
 # python -m pytest -W ignore::DeprecationWarning -W ignore::FutureWarning -s tests/modules/test_spconv.py -k test_submconv3d_0
