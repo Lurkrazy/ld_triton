@@ -2,7 +2,7 @@
 import torch
 from ld_triton.modules.spconv.utils import SparseConvTensor
 from ld_triton.ops.spconv.naive_spconv2d import naive_sparse_conv2d
-import pytest
+
 
 # only support channel_last
 class NaiveSparseConv2d(torch.nn.Module):

@@ -24,3 +24,4 @@ triton ops
 
 [submcon2d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
 
+[submcon3d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)

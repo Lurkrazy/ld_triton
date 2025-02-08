@@ -1,11 +1,11 @@
 
 import torch
 from ld_triton.modules.spconv.utils import SparseConvTensor
-from ld_triton.ops.spconv.naive_spconv3d import naive_sparse_conv3d
+from ld_triton.ops.spconv.naive_submconv3d import naive_submconv3d
 
 
 # only support channel_last
-class NaiveSparseConv3d(torch.nn.Module):
+class NaiveSubMConv3d(torch.nn.Module):
     def __init__(self,                  
                  in_channels,
                  out_channels,
@@ -17,7 +17,7 @@ class NaiveSparseConv3d(torch.nn.Module):
                  device = 'cpu',
                  dtype = torch.float32
         ):
-        super(NaiveSparseConv3d, self).__init__()
+        super(NaiveSubMConv3d, self).__init__()
         factory_kwargs = {"device": device, "dtype": dtype}
         self.C = in_channels
         self.K = out_channels
@@ -62,10 +62,11 @@ class NaiveSparseConv3d(torch.nn.Module):
         indices = x.indices
         batch_size = x.batch_size
         HW_0, HW_1, HW_2 = x.spatial_shape
-        naive_out_features, naive_out_indices, PQ_0, PQ_1, PQ_2= naive_sparse_conv3d(features, indices, 
+        naive_out_features, naive_out_indices, PQ_0, PQ_1, PQ_2= naive_submconv3d(features, indices, 
                                                                                      HW_0, HW_1, HW_2, batch_size, self.weight, self.bias, 
                                                                                      (self.str_hw_1, self.str_hw_1, self.str_hw_2), 
                                                                                      (self.pad_hw_0, self.pad_hw_1, self.pad_hw_2), 
                                                                                      (self.dil_hw_0, self.dil_hw_1, self.dil_hw_2))
         output = SparseConvTensor(naive_out_features, naive_out_indices, [PQ_0, PQ_1, PQ_2], batch_size)
         return output
+
