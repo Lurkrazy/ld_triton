@@ -50,7 +50,7 @@ $=\sum_{p=0}^{M-1} df_{p} . \frac{\partial max(x)_{p}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=df_{i} . \frac{\partial max(x)_{iq}}{\partial x_{ij}}$
+$=df_{i} . \frac{\partial x_{ik}}{\partial x_{ij}}$
 </p>
 
 <p>
