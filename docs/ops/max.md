@@ -2,7 +2,7 @@
 $x \in R^{MN}$
 
 <p>
-$max(x)_{ij} = max({x_{i,0},...,x_{i,n-1}}) = x_{i,k}$
+$max(x)_{ij} = max({x_{i,0},...,x_{i,n-1}}) = x_{ik}$
 </p>
 
 # backward
@@ -19,7 +19,7 @@ $\frac {\partial max(x)_{pq}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac {\partial max(x)_{p,k}}{\partial x_{ij}}$
+$=\frac {\partial x_{pk}}{\partial x_{ij}}$
 </p>
 
 ### $p \neq i$
