@@ -54,7 +54,7 @@ $=\sum_{q=0}^{N-1}df_{iq} . \frac{\partial max(x)_{iq}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\sum_{q=0}^{N-1}df_{iq} . \frac{\partial max(x)_{ik}}{\partial x_{ij}}$
+$=\sum_{q=0}^{N-1}df_{iq} . \frac{\partial x_{ik}}{\partial x_{ij}}$
 </p>
 
 ### $k \neq j$
