@@ -24,7 +24,7 @@ $=\frac {\partial x_{pk}}{\partial x_{ij}}$
 
 ### $p \neq i$
 <p>
-$\frac {\partial max(x)_{pq}}{\partial x_{ij}}=0$
+$\frac {\partial max(x)_{p}}{\partial x_{ij}}=0$
 </p>
 
 ### $p = i, k \neq j$
@@ -42,7 +42,7 @@ $\frac {\partial max(x)_{p}}{\partial x_{ij}}=\frac {\partial x_{ik}}{\partial x
 $\frac{\partial f(max(x))}{\partial x_{ij}}$
 
 <p>
-$=\sum_{p=0}^{M-1}\sum_{q=0}^{N-1}\frac{\partial f(max(x))}{\partial max(x)_{p}} . \frac{\partial max(x)_{p}}{\partial x_{ij}}$
+$=\sum_{p=0}^{M-1} \frac{\partial f(max(x))}{\partial max(x)_{p}} . \frac{\partial max(x)_{p}}{\partial x_{ij}}$
 </p>
 
 <p>
