@@ -23,13 +23,19 @@ $=\frac {\partial x_{pk}}{\partial x_{ij}}$
 </p>
 
 ### $p \neq i$
+<p>
 $\frac {\partial max(x)_{pq}}{\partial x_{ij}}=0$
+</p>
 
 ### $p = i, k \neq j$
+<p>
 $\frac {\partial max(x)_{pq}}{\partial x_{ij}}=\frac {\partial x_{ik}}{\partial x_{ij}}=0$
+</p>
 
 ### $p = i, k = j$
+<p>
 $\frac {\partial max(x)_{pq}}{\partial x_{ij}}=\frac {\partial x_{ik}}{\partial x_{ij}}=1$
+</p>
 
 ## 链式法则
 
