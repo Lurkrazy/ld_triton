@@ -1,5 +1,7 @@
 
 import torch
+import time
+
 
 # https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/sparse/nn/SubmConv2D_cn.html#submconv2d
 # [SECOND: Sparsely Embedded Convolutional Detection] https://www.mdpi.com/1424-8220/18/10/3337/pdf?version=1538798176
@@ -14,10 +16,11 @@ class _naive_submconv3d(torch.autograd.Function):
                 batch_size,
                 weight: torch.Tensor,
                 bias: torch.Tensor = None,
-                stride: int = (1, 1),
-                padding: int = (0, 0),
-                dilation: int = (1, 1),
+                stride: int = (1, 1, 1),
+                padding: int = (0, 0, 0),
+                dilation: int = (1, 1, 1),
                 memory_format: str = 'channel_last'):
+        _fwd_debug = True
         assert memory_format == 'channel_last'
         # why? Adapted from spconv
         str_hw_0, str_hw_1, str_hw_2 = 1, 1, 1
@@ -44,79 +47,77 @@ class _naive_submconv3d(torch.autograd.Function):
 
         gather_idx = {}
         scatter_idx = {}
-        out_indices = list()
+        out_indices_list = indices.tolist()
+        out_indices_dict = {tuple(value): index for index, value in enumerate(out_indices_list)}
         # print(f'indices: {indices}')
         center_rs_0 = RS_0 // 2
         center_rs_1 = RS_1 // 2
         center_rs_2 = RS_2 // 2
+        if _fwd_debug:
+            start_cpu = time.time()
+        RS = RS_0 * RS_1 * RS_2
 
-        gather_idx[(center_rs_0, center_rs_1, center_rs_2)] = []
-        scatter_idx[(center_rs_0, center_rs_1, center_rs_2)] = []
-        center_idx = []
+        for rs in range(RS // 2 + 1):
+            rs_0 = rs // (RS_1 * RS_2)
+            rs_1 = (rs % (RS_1 * RS_2)) // RS_2
+            rs_2 = rs % RS_2
+            gather_idx[(rs_0, rs_1, rs_2)] = []
+            scatter_idx[(rs_0, rs_1, rs_2)] = []
+            if rs_0 == center_rs_0 and rs_1 == center_rs_1 and rs_2 == center_rs_2:
+                gather_idx[(rs_0, rs_1, rs_2)] = [i for i in range(num_points)]
+                scatter_idx[(rs_0, rs_1, rs_2)] = [i for i in range(num_points)]
+            else:
+                gather_idx[(rs_0, rs_1, rs_2)] = [-1 for _ in range(num_points)]
+                scatter_idx[(rs_0, rs_1, rs_2)] = [-1 for _ in range(num_points)]
+                gather_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)] = [-1 for _ in range(num_points)]
+                scatter_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)] = [-1 for _ in range(num_points)]
+            for i_in in range(num_points):
+                if rs_0 == center_rs_0 and rs_1 == center_rs_1 and rs_2 == center_rs_2:
+                    pass
+                else:
+                    p_in = out_indices_list[i_in]
+                    bs, hw_0, hw_1, hw_2 = p_in
+                    center_hw_0 = hw_0 + (center_rs_0 - rs_0) * dil_hw_0
+                    center_hw_1 = hw_1 + (center_rs_1 - rs_1) * dil_hw_1
+                    center_hw_2 = hw_2 + (center_rs_2 - rs_2) * dil_hw_2
+                    center_p = tuple([bs, center_hw_0, center_hw_1, center_hw_2])
+                    # print(f'center_p: {center_p}')
+                    if ((hw_0 + pad_hw_0 - rs_0 * dil_hw_0) % str_hw_0 == 0 and 
+                        (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) % str_hw_1 == 0 and
+                        (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) % str_hw_2 == 0 and
+                        center_p in out_indices_dict):
+                        pq_0 = (hw_0 + pad_hw_0 - rs_0 * dil_hw_0) // str_hw_0
+                        pq_1 = (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) // str_hw_1
+                        pq_2 = (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) // str_hw_2
+                        if pq_0 >= 0 and pq_0 < PQ_0 and pq_1 >= 0 and pq_1 < PQ_1 and pq_2 >= 0 and pq_2 < PQ_2:
+                            assert center_hw_0 == pq_0
+                            assert center_hw_1 == pq_1
+                            assert center_hw_2 == pq_2
+                            p_out = tuple([bs, pq_0, pq_1, pq_2])
+                            idx = out_indices_dict[p_out]
+                            gather_idx[(rs_0, rs_1, rs_2)][i_in] = i_in
+                            gather_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)][i_in] = idx
 
-        for i_in in range(num_points):
-            p_in = indices[i_in]
-            bs, hw_0, hw_1, hw_2 = p_in
-            
-            if ((hw_0 + pad_hw_0 - center_rs_0 * dil_hw_0) % str_hw_0 == 0 and 
-                (hw_1 + pad_hw_1 - center_rs_1 * dil_hw_1) % str_hw_1 == 0 and
-                (hw_2 + pad_hw_2 - center_rs_2 * dil_hw_2) % str_hw_2 == 0):
+                            scatter_idx[(rs_0, rs_1, rs_2)][i_in] = idx
+                            scatter_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)][i_in] = i_in
+            gather_idx[(rs_0, rs_1, rs_2)] = [x for x in gather_idx[(rs_0, rs_1, rs_2)] if x != -1]
+            gather_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)] = [x for x in gather_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)] if x != -1]
+            scatter_idx[(rs_0, rs_1, rs_2)] = [x for x in scatter_idx[(rs_0, rs_1, rs_2)] if x != -1]
+            scatter_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)] = [x for x in scatter_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)] if x != -1]
 
-                pq_0 = ((hw_0 + pad_hw_0 - center_rs_0 * dil_hw_0) // str_hw_0).item()
-                pq_1 = ((hw_1 + pad_hw_1 - center_rs_1 * dil_hw_1) // str_hw_1).item()
-                pq_2 = ((hw_2 + pad_hw_2 - center_rs_2 * dil_hw_2) // str_hw_2).item()
-                if pq_0 >= 0 and pq_0 < PQ_0 and pq_1 >= 0 and pq_1 < PQ_1 and pq_2 >= 0 and pq_2 < PQ_2:
-                    center_idx.append([bs.item(), hw_0.item(), hw_1.item(), hw_2.item()])
-                    p_out = [bs, pq_0, pq_1, pq_2]
-                    gather_idx[(center_rs_0, center_rs_1, center_rs_2)].append(i_in)
-                    if p_out not in out_indices:
-                        scatter_idx[(center_rs_0, center_rs_1, center_rs_2)].append(len(out_indices))
-                        out_indices.append(p_out)
-                    else:
-                        idx = out_indices.index(p_out)
-                        scatter_idx[(center_rs_0, center_rs_1, center_rs_2)].append(idx)
 
-        # print(f'center_idx: {center_idx}')
-        for rs_0 in range(RS_0):
-            for rs_1 in range(RS_1):
-                for rs_2 in range(RS_2):
-                    if rs_0 == center_rs_0 and rs_1 == center_rs_1 and rs_2 == center_rs_2:
-                        continue
+        if _fwd_debug:
+            end_cpu = time.time()
+            cpu_time = (end_cpu - start_cpu) * 1000
+            print(f'cpu_time: {cpu_time}ms')
 
-                    gather_idx[(rs_0, rs_1, rs_2)] = []
-                    scatter_idx[(rs_0, rs_1, rs_2)] = []
-
-                    for i_in in range(num_points):
-                        p_in = indices[i_in]
-                        bs, hw_0, hw_1, hw_2 = p_in
-                        center_hw_0 = hw_0 + (center_rs_0 - rs_0) * dil_hw_0
-                        center_hw_1 = hw_1 + (center_rs_1 - rs_1) * dil_hw_1
-                        center_hw_2 = hw_2 + (center_rs_2 - rs_2) * dil_hw_2
-                        center_p = [bs.item(), center_hw_0.item(), center_hw_1.item(), center_hw_2.item()]
-                        # print(f'center_p: {center_p}')
-                        if ((hw_0 + pad_hw_0 - rs_0 * dil_hw_0) % str_hw_0 == 0 and 
-                            (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) % str_hw_1 == 0 and
-                            (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) % str_hw_2 == 0 and
-                            center_p in center_idx):
-
-                            pq_0 = ((hw_0 + pad_hw_0 - rs_0 * dil_hw_0) // str_hw_0).item()
-                            pq_1 = ((hw_1 + pad_hw_1 - rs_1 * dil_hw_1) // str_hw_1).item()
-                            pq_2 = ((hw_2 + pad_hw_2 - rs_2 * dil_hw_2) // str_hw_2).item()
-                            if pq_0 >= 0 and pq_0 < PQ_0 and pq_1 >= 0 and pq_1 < PQ_1 and pq_2 >= 0 and pq_2 < PQ_2:
-                                p_out = [bs, pq_0, pq_1, pq_2]
-                                gather_idx[(rs_0, rs_1, rs_2)].append(i_in)
-                                if p_out not in out_indices:
-                                    scatter_idx[(rs_0, rs_1, rs_2)].append(len(out_indices))
-                                    out_indices.append(p_out)
-                                else:
-                                    idx = out_indices.index(p_out)
-                                    scatter_idx[(rs_0, rs_1, rs_2)].append(idx)
-
-        # print(f'gather_idx: {gather_idx}')
-        # print(f'scatter_idx: {scatter_idx}')
-        out_indices = torch.tensor(out_indices, dtype=indices.dtype, device=indices.device)
+        out_indices = indices
         out_num_points = len(out_indices)
         out_features = torch.zeros(out_num_points, K, dtype=features.dtype, device=features.device)
+        if _fwd_debug:
+            start_cuda = torch.cuda.Event(enable_timing=True)
+            end_cuda = torch.cuda.Event(enable_timing=True)
+            start_cuda.record()
         for rs_0, rs_1, rs_2 in gather_idx.keys():
             if memory_format == 'channel_first':
                 w = weight[:, :, rs_0, rs_1, rs_2]
@@ -130,6 +131,12 @@ class _naive_submconv3d(torch.autograd.Function):
  
         if bias is not None:
             out_features += bias
+        if _fwd_debug:
+            end_cuda.record()
+            torch.cuda.synchronize()
+            cuda_time = start_cuda.elapsed_time(end_cuda)
+            print(f'cuda_time: {cuda_time}ms')
+            print(f'cuda_time and cpu_time: {cuda_time + cpu_time}')
 
         ctx.save_for_backward(features, weight)
         ctx.indices = indices
