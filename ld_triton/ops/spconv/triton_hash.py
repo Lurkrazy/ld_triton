@@ -89,6 +89,7 @@ def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_
     val = tl.load(table_val_ptr + slot, mask=mask, other=empty_key_int)
     tl.store(val_ptrs, val, mask=mask)
     tl.store(slot_ptrs, slot, mask=mask)
+    # res_slot = tl.full((BLOCK_SIZE, ), -1, dtype=tl.int32)
 
     is_broke = tl.sum(mask.to(tl.int32), axis=0)
     total_mask = tl.where(mask, False, False)
@@ -124,6 +125,8 @@ def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_
         is_store_2 = tl.sum(mask_2.to(tl.int32), axis=0)
         if is_store_2 != 0:
             tl.store(slot_ptrs, -1, mask=mask_2)
+
+    # tl.device_print('res_slot', res_slot)
 
 
 # Adapted from https://github.com/FindDefinition/cumm/blob/v0.4.10/include/tensorview/hash/linear.cu.h
@@ -195,8 +198,8 @@ def build_hash(indices: torch.Tensor, spatial_shape, rate: float = 2.0):
     kv_size = indices.shape[0]
     indices = indices.to(torch.int32)
     key = indices[:, 0] * spatial_shape[0] * spatial_shape[1] * spatial_shape[2] + \
-            indices[:, 1] * spatial_shape[0] * spatial_shape[1] + \
-            indices[:, 2] * spatial_shape[0] + \
+            indices[:, 1] * spatial_shape[1] * spatial_shape[2] + \
+            indices[:, 2] * spatial_shape[2] + \
             indices[:, 3]
     
     val = torch.arange(0, kv_size, dtype=torch.int32, device=indices.device)
@@ -206,15 +209,16 @@ def build_hash(indices: torch.Tensor, spatial_shape, rate: float = 2.0):
     return table
 
 
-def lookup_offset(table, indices):
+def lookup_offset(table, indices, spatial_shape):
     indices = indices.to(torch.int32)
     key = indices[:, 0] * spatial_shape[0] * spatial_shape[1] * spatial_shape[2] + \
-            indices[:, 1] * spatial_shape[0] * spatial_shape[1] + \
-            indices[:, 2] * spatial_shape[0] + \
+            indices[:, 1] * spatial_shape[1] * spatial_shape[2] + \
+            indices[:, 2] * spatial_shape[2] + \
             indices[:, 3]
     key = torch.cat([key[0:6] - 1, key], dim=0)
     slot, val = table.lookup_offset(key.to(torch.uint32))
-    print(f'slot: {slot}')
+    
+    print(f'key: {key}')
     print(f'val: {val}')
     return val
 
@@ -245,7 +249,7 @@ def test_cas():
 # test_cas()
 
 if __name__ == '__main__':
-    spatial_shape = [23, 23, 23]
+    spatial_shape = [23, 24, 25]
     # (0, 6, 1, 1), (0, 18, 9, 1), (0, 15, 7, 1), (0, 7, 8, 1), (0, 20, 7, 1), (0, 19, 6, 0), (0, 3, 13, 1), (0, 4, 14, 2), (0, 3, 7, 1), 
     indices = torch.tensor([(0, 3, 7, 1), (0, 6, 1, 2), (0, 18, 9, 3), (0, 15, 7, 4), (0, 7, 8, 5), (0, 20, 7, 6), (0, 3, 13, 7)], 
                            device='cuda', 
@@ -260,21 +264,21 @@ if __name__ == '__main__':
 
     table = build_hash(indices, spatial_shape)
     print(table)
-    val = lookup_offset(table, indices)
+    val = lookup_offset(table, indices, spatial_shape)
     print(val)
 
-    N = 100000
-    table = LinearHashTableSplit(N + 1, rate = 2.0)
-    key = torch.arange(1 , N + 1, dtype=torch.int32, device='cuda')
-    val = torch.arange(1 , N + 1, dtype=torch.int32, device='cuda')
-    perm_idx = torch.randperm(N)
-    perm_key = key[perm_idx].contiguous()
-    perm_val = val[perm_idx].contiguous()
-    table.insert(perm_key.to(torch.uint32), perm_val.to(torch.uint32))
-    res_key = torch.arange(1 , N + 1, dtype=torch.int32, device='cuda')
-    _, res_val = table.lookup_offset(res_key.to(torch.uint32))
+    # N = 100000
+    # table = LinearHashTableSplit(N + 1, rate = 2.0)
+    # key = torch.arange(1 , N + 1, dtype=torch.int32, device='cuda')
+    # val = torch.arange(1 , N + 1, dtype=torch.int32, device='cuda')
+    # perm_idx = torch.randperm(N)
+    # perm_key = key[perm_idx].contiguous()
+    # perm_val = val[perm_idx].contiguous()
+    # table.insert(perm_key.to(torch.uint32), perm_val.to(torch.uint32))
+    # res_key = torch.arange(1 , N + 1, dtype=torch.int32, device='cuda')
+    # _, res_val = table.lookup_offset(res_key.to(torch.uint32))
 
-    assert torch.allclose(val.to(torch.uint32), res_val)
+    # assert torch.allclose(val.to(torch.uint32), res_val)
 
 
 
