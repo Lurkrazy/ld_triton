@@ -295,7 +295,7 @@ class _triton_submconv3d(torch.autograd.Function):
                 stride: int = (1, 1, 1),
                 padding: int = (0, 0, 0),
                 dilation: int = (1, 1, 1)):
-        _fwd_debug = True
+        _fwd_debug = False
         # why? Adapted from spconv
         str_hw_0, str_hw_1, str_hw_2 = 1, 1, 1
         K, RS_0, RS_1, RS_2, C = weight.shape
@@ -330,7 +330,7 @@ class _triton_submconv3d(torch.autograd.Function):
             end_get_indice_pairs.record()
             torch.cuda.synchronize()
             get_indice_pairs_time = start_get_indice_pairs.elapsed_time(end_get_indice_pairs)
-            print(f'get_indice_pairs_time: {get_indice_pairs_time}ms')
+            print(f'get_indice_pairs_time: {get_indice_pairs_time:.3f}ms')
 
 
         if _fwd_debug:
@@ -347,33 +347,30 @@ class _triton_submconv3d(torch.autograd.Function):
         p_in = features[gather_idx[RS // 2]]
         p_out = p_in @ w.t()
         out_features[scatter_idx[RS // 2]] += p_out
-        
+
         if not torch.all(indice_num_per_loc == 0):
             for rs in range(RS // 2):
                 if indice_num_per_loc[rs] != 0:
                     rs_0 = rs // (RS_1 * RS_2)
                     rs_1 = (rs % (RS_1 * RS_2)) // RS_2
                     rs_2 = rs % RS_2
-
                     rotate_rs = RS - 1 - rs
                     rotate_rs_0 = rotate_rs // (RS_1 * RS_2)
                     rotate_rs_1 = (rotate_rs % (RS_1 * RS_2)) // RS_2
                     rotate_rs_2 = rotate_rs % RS_2
 
                     w = weight[:, rs_0, rs_1, rs_2, :]
-
-                    idx = [x for x in gather_idx[rs].tolist() if x != -1]
+                    idx = gather_idx[rs][gather_idx[rs] != -1]
                     p_in = features[idx]
                     p_out = p_in @ w.t()
-                    idx = [x for x in scatter_idx[rs].tolist()  if x != -1]
+                    idx = scatter_idx[rs][scatter_idx[rs] != -1]
                     out_features[idx] += p_out
 
                     w = weight[:, rotate_rs_0, rotate_rs_1, rotate_rs_2, :]
-
-                    idx = [x for x in gather_idx[rotate_rs].tolist()  if x != -1]
+                    idx = gather_idx[rotate_rs][gather_idx[rotate_rs] != -1]
                     rotate_p_in = features[idx]
                     rotate_p_out = rotate_p_in @ w.t()
-                    idx = [x for x in scatter_idx[rotate_rs].tolist()  if x != -1]
+                    idx = scatter_idx[rotate_rs][scatter_idx[rotate_rs] != -1]
                     out_features[idx] += rotate_p_out
 
 
@@ -383,8 +380,8 @@ class _triton_submconv3d(torch.autograd.Function):
             end_matmul.record()
             torch.cuda.synchronize()
             matmul_time = start_matmul.elapsed_time(end_matmul)
-            print(f'matmul_time: {matmul_time}ms')
-            print(f'get_indice_pairs_time and matmul_time: {get_indice_pairs_time + matmul_time}')
+            print(f'matmul_time: {matmul_time:.3f}ms')
+            print(f'get_indice_pairs_time and matmul_time: {get_indice_pairs_time + matmul_time:.3f}ms')
 
         ctx.save_for_backward(gather_idx, scatter_idx, indice_num_per_loc, features, weight)
         ctx.RS_0 = RS_0
@@ -430,17 +427,17 @@ class _triton_submconv3d(torch.autograd.Function):
                         rotate_rs_2 = rotate_rs % RS_2
 
                         w = weight[:, rs_0, rs_1, rs_2, :]
-                        idx = [x for x in gather_idx[rs].tolist() if x != -1]
+                        idx = gather_idx[rs][gather_idx[rs] != -1]
                         p_dout = dout_features[idx]
                         p_din = p_dout @ w
-                        idx = [x for x in scatter_idx[rs].tolist()  if x != -1]
+                        idx = scatter_idx[rs][scatter_idx[rs] != -1]
                         dfeatures[idx] += p_din
 
                         w = weight[:, rotate_rs_0, rotate_rs_1, rotate_rs_2, :]
-                        idx = [x for x in gather_idx[rotate_rs].tolist()  if x != -1]
+                        idx = gather_idx[rotate_rs][gather_idx[rotate_rs] != -1]
                         rotate_p_dout = dout_features[idx]
                         rotate_p_din = rotate_p_dout @ w
-                        idx = [x for x in scatter_idx[rotate_rs].tolist()  if x != -1]
+                        idx = scatter_idx[rotate_rs][scatter_idx[rotate_rs] != -1]
                         dfeatures[idx] += rotate_p_din
 
         dweight = None
@@ -466,15 +463,15 @@ class _triton_submconv3d(torch.autograd.Function):
                         rotate_rs_1 = (rotate_rs % (RS_1 * RS_2)) // RS_2
                         rotate_rs_2 = rotate_rs % RS_2
                         
-                        idx = [x for x in dout_gather_idx[rs].tolist() if x != -1]
+                        idx = dout_gather_idx[rs][dout_gather_idx[rs] != -1]
                         p_dout = dout_features[idx]
-                        idx = [x for x in input_gather_idx[rs].tolist() if x != -1]
+                        idx = input_gather_idx[rs][input_gather_idx[rs] != -1]
                         p_in = features[idx]
                         dweight[:, rs_0, rs_1, rs_2, :] += p_dout.t() @ p_in
 
-                        idx = [x for x in dout_gather_idx[rotate_rs].tolist() if x != -1]
+                        idx = dout_gather_idx[rotate_rs][dout_gather_idx[rotate_rs] != -1]
                         p_dout = dout_features[idx]
-                        idx = [x for x in input_gather_idx[rotate_rs].tolist() if x != -1]
+                        idx = input_gather_idx[rotate_rs][input_gather_idx[rotate_rs] != -1]
                         p_in = features[idx]
                         dweight[:, rotate_rs_0, rotate_rs_1, rotate_rs_2, :] += p_dout.t() @ p_in
 
