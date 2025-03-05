@@ -9,8 +9,8 @@ def linear_hash_table_insert(table_key_ptr, table_val_ptr, key_ptr, val_ptr, num
     pid = tl.program_id(0)
     kv_start = pid * BLOCK_SIZE
     offsets = tl.arange(0, BLOCK_SIZE)
-    key_ptrs = key_ptr +  (kv_start + offsets) % hash_size
-    val_ptrs = val_ptr +  (kv_start + offsets) % hash_size
+    key_ptrs = key_ptr +  (kv_start + offsets) 
+    val_ptrs = val_ptr +  (kv_start + offsets)
     kv_mask = (kv_start + offsets) < num_act_in_real
     key = tl.load(key_ptrs, mask=kv_mask, other=empty_key_uint)
     val = tl.load(val_ptrs, mask=kv_mask, other=empty_key_uint)
@@ -162,6 +162,7 @@ class LinearHashTableSplit(object):
             BLOCK_SIZE = triton.next_power_of_2(triton.cdiv(num_act_in_real, 32) * 32)
         else:
             BLOCK_SIZE = 1024
+            
         grid = lambda META: (triton.cdiv(len(key), BLOCK_SIZE),)
         linear_hash_table_insert[grid](self._table_key, 
                                        self._table_val,
@@ -219,6 +220,17 @@ def build_hash(indices: torch.Tensor, spatial_shape, rate: float = 2.0):
     table.insert(key.to(torch.uint32), val.to(torch.uint32))
     return table
 
+
+def build_hash_2d(indices: torch.Tensor, spatial_shape, rate: float = 2.0):
+    kv_size = indices.shape[0]
+    indices = indices.to(torch.int32)
+    key = indices[:, 0] * spatial_shape[0] * spatial_shape[1] + \
+            indices[:, 1] * spatial_shape[1] + \
+            indices[:, 2]
+    val = torch.arange(0, kv_size, dtype=torch.int32, device=indices.device)
+    table = LinearHashTableSplit(kv_size - 1, rate = 2.0)
+    table.insert(key.to(torch.uint32), val.to(torch.uint32))
+    return table
 
 def lookup_offset(table: LinearHashTableSplit, indices, spatial_shape):
     indices = indices.to(torch.int32)
@@ -637,6 +649,74 @@ if __name__ == '__main__':
     print(f'slot: {slot}')
     print(f'val: {val}')
 
+    indices = torch.tensor([[ 0,  1,  5],
+        [ 0,  1,  6],
+        [ 0,  1,  7],
+        [ 0,  1, 11],
+        [ 0,  1, 12],
+        [ 0,  1, 13],
+        [ 0,  2,  5],
+        [ 0,  2,  6],
+        [ 0,  2,  7],
+        [ 0,  2,  8],
+        [ 0,  2, 11],
+        [ 0,  2, 12],
+        [ 0,  2, 13],
+        [ 0,  3,  5],
+        [ 0,  3,  6],
+        [ 0,  3,  7],
+        [ 0,  3,  8],
+        [ 0,  3, 11],
+        [ 0,  3, 12],
+        [ 0,  3, 13],
+        [ 0,  4,  0],
+        [ 0,  4,  1],
+        [ 0,  4,  6],
+        [ 0,  4,  7],
+        [ 0,  4,  8],
+        [ 0,  5,  0],
+        [ 0,  5,  1],
+        [ 0,  5,  6],
+        [ 0,  5,  7],
+        [ 0,  5,  8],
+        [ 0,  6,  0],
+        [ 0,  6,  1],
+        [ 0,  6,  6],
+        [ 0,  6,  7],
+        [ 0,  6,  8],
+        [ 0,  7,  6],
+        [ 0,  7,  7],
+        [ 0,  7,  8],
+        [ 0, 13,  5],
+        [ 0, 13,  6],
+        [ 0, 13,  7],
+        [ 0, 14,  5],
+        [ 0, 14,  6],
+        [ 0, 14,  7],
+        [ 0, 15,  5],
+        [ 0, 15,  6],
+        [ 0, 15,  7],
+        [ 0, 16,  7],
+        [ 0, 16,  8],
+        [ 0, 16,  9],
+        [ 0, 17,  7],
+        [ 0, 17,  8],
+        [ 0, 17,  9],
+        [ 0, 18,  5],
+        [ 0, 18,  6],
+        [ 0, 18,  7],
+        [ 0, 18,  8],
+        [ 0, 18,  9],
+        [ 0, 19,  5],
+        [ 0, 19,  6],
+        [ 0, 19,  7],
+        [ 0, 20,  5],
+        [ 0, 20,  6],
+        [ 0, 20,  7]], device='cuda', dtype=torch.int32)
+
+    spatial_shape = [21, 21]
+    table = build_hash_2d(indices, spatial_shape)
+    print(table)
 
     N = 100000
     table = LinearHashTableSplit(N + 1, rate = 2.0)
