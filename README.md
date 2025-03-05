@@ -20,9 +20,9 @@ triton ops
 
 [softmax](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/softmax.md)
 
-[spcon2d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
+[sparsecon2d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
 
-[spcon3d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
+[sparsecon3d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
 
 [submcon2d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
 
