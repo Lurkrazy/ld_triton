@@ -1,11 +1,11 @@
 
 import torch
 from ld_triton.modules.spconv.utils import SparseConvTensor
-from ld_triton.ops.spconv.triton_sparseconv2d import triton_sparseconv2d
+from ld_triton.ops.spconv.triton_submconv2d import triton_submconv2d
 
 
 # only support channel_last
-class TritonSparseConv2d(torch.nn.Module):
+class TritonSubMConv2d(torch.nn.Module):
     def __init__(self,                  
                  in_channels,
                  out_channels,
@@ -17,7 +17,7 @@ class TritonSparseConv2d(torch.nn.Module):
                  device = 'cpu',
                  dtype = torch.float32
         ):
-        super(TritonSparseConv2d, self).__init__()
+        super(TritonSubMConv2d, self).__init__()
         factory_kwargs = {"device": device, "dtype": dtype}
         self.C = in_channels
         self.K = out_channels
@@ -58,6 +58,6 @@ class TritonSparseConv2d(torch.nn.Module):
         indices = x.indices
         batch_size = x.batch_size
         H, W = x.spatial_shape
-        triton_out_features, triton_out_indices, P, Q = triton_sparseconv2d(features, indices, H, W, batch_size, self.weight, self.bias, (self.str_h, self.str_w), (self.pad_h, self.pad_w), (self.dil_h, self.dil_w))
+        triton_out_features, triton_out_indices, P, Q = triton_submconv2d(features, indices, H, W, batch_size, self.weight, self.bias, (self.str_h, self.str_w), (self.pad_h, self.pad_w), (self.dil_h, self.dil_w))
         output = SparseConvTensor(triton_out_features, triton_out_indices, [P, Q], batch_size)
         return output

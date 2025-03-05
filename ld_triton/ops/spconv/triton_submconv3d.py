@@ -256,9 +256,7 @@ def generate_subm_conv_inds(indices,
         [HW_0, HW_1, HW_2],
         PQ_0, PQ_1, PQ_2,
     )
-    # # sort is cost too much time
-    # gather_idx, _ = torch.sort(gather_idx, descending=True)
-    # scatter_idx, _ = torch.sort(scatter_idx, descending=True)
+
     return indices, gather_idx, scatter_idx, indice_num_per_loc
 
 

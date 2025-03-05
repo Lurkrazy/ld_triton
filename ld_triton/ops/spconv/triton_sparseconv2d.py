@@ -471,7 +471,6 @@ class _triton_sparseconv2d(torch.autograd.Function):
     
     @staticmethod
     def backward(ctx, dout_features: torch.Tensor, *args):
-        # print(f'---: dout_features: {dout_features}')
         fwd_gather_idx, fwd_scatter_idx, indice_num_per_loc, features, weight = ctx.saved_tensors
         R = ctx.R
         S = ctx.S
