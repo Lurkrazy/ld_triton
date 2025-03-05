@@ -469,3 +469,161 @@ class _naive_submconv2d_1(torch.autograd.Function):
 
 
 naive_submconv2d_1 = _naive_submconv2d_1.apply
+
+
+class _naive_submconv2d_2(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx,                 
+                features: torch.Tensor,
+                indices: torch.Tensor,
+                H,
+                W,
+                batch_size,
+                weight: torch.Tensor,
+                bias: torch.Tensor = None,
+                stride: int = (1, 1),
+                padding: int = (0, 0),
+                dilation: int = (1, 1),
+                memory_format: str = 'channel_last'):
+        assert memory_format == 'channel_last'
+        # why? Adapted from spconv
+        str_h, str_w = 1, 1
+
+        if memory_format == 'channel_first':
+            K, C, R, S = weight.shape
+        elif memory_format == 'channel_last':
+            K, R, S, C = weight.shape
+
+        assert R % 2 == 1, "subm only support odd ksize(R={R})"
+        assert S % 2 == 1, "subm only support odd ksize(S={S})"
+
+        dil_h, dil_w = dilation
+        pad_h = (R // 2) * dil_h
+        pad_w = (S // 2) * dil_w
+        
+        num_points = len(features)
+
+        P = H
+        Q = W
+
+        gather_idx = {}
+        scatter_idx = {}
+        out_indices = indices.tolist()
+        # print(f'indices: {indices}')
+        center_r = R // 2
+        center_s = S // 2
+
+        for r in range(R):
+            for s in range(S):
+                gather_idx[(r, s)] = []
+                scatter_idx[(r, s)] = []
+
+                for i_in in range(num_points):
+                    if r == center_r and s == center_s:
+                        gather_idx[(r, s)].append(i_in)
+                        scatter_idx[(r, s)].append(i_in)
+                    else:
+                        p_in = indices[i_in].tolist()
+                        bs, h, w = p_in
+                        center_h = h + (center_r - r) * dil_h
+                        center_w = w + (center_s - s) * dil_w
+                        center_p = [bs, center_h, center_w]
+                        # print(f'center_p: {center_p}')
+                        if ((h + pad_h - r * dil_h) % str_h == 0 and 
+                            (w + pad_w - s * dil_w) % str_w == 0 and
+                            center_p in out_indices):
+
+                            p = ((h + pad_h - r * dil_h) // str_h)
+                            q = ((w + pad_w - s * dil_w) // str_w)
+                            if p >= 0 and p < P and q >= 0 and q < Q:
+                                assert center_h == p
+                                assert center_w == q
+                                p_out = [bs, p, q]
+                                gather_idx[(r, s)].append(i_in)
+
+                                idx = out_indices.index(p_out)
+                                scatter_idx[(r, s)].append(idx)
+
+        out_indices = torch.tensor(out_indices, dtype=indices.dtype, device=indices.device)
+        out_num_points = len(out_indices)
+        out_features = torch.zeros(out_num_points, K, dtype=features.dtype, device=features.device)
+        for r, s in gather_idx.keys():
+            if memory_format == 'channel_first':
+                w = weight[:, :, r, s]
+            elif memory_format == 'channel_last':
+                w = weight[:, r, s, :]
+            else:
+                raise ValueError(f"memory_format: {memory_format} is not supported, only support 'channel_first' or 'channel_last'")
+            p_in = features[gather_idx[(r, s)]]
+            p_out = p_in @ w.t()
+            out_features[scatter_idx[(r, s)]] += p_out
+ 
+        if bias is not None:
+            out_features += bias
+
+        ctx.save_for_backward(features, weight)
+        ctx.gather_idx = gather_idx
+        ctx.scatter_idx = scatter_idx
+
+        ctx.memory_format = memory_format
+        if bias is None:
+            ctx.bias_requires_grad = False
+        else:
+            ctx.bias_requires_grad = bias.requires_grad
+        
+        return out_features, out_indices, P, Q
+    
+    @staticmethod
+    def backward(ctx, dout_features: torch.Tensor, *args):
+        # print(f'---: dout_features: {dout_features}')
+        features, weight = ctx.saved_tensors
+        fwd_gather_idx = ctx.gather_idx
+        fwd_scatter_idx = ctx.scatter_idx
+
+        memory_format = ctx.memory_format
+
+        dfeatures = None
+        if features.requires_grad:
+            dfeatures = torch.zeros_like(features)
+            gather_idx = fwd_scatter_idx
+            scatter_idx = fwd_gather_idx
+
+            for r, s in gather_idx.keys():
+                if memory_format == 'channel_first':
+                    w = weight[:, :, r, s]
+                elif memory_format == 'channel_last':
+                    w = weight[:, r, s, :]
+                else:
+                    raise ValueError(f"memory_format: {memory_format} is not supported, only support 'channel_first' or 'channel_last'")
+
+                p_dout = dout_features[gather_idx[(r, s)]]
+                p_din = p_dout @ w
+                dfeatures[scatter_idx[(r, s)]] += p_din
+
+        dweight = None
+        if weight.requires_grad:
+            dweight = torch.zeros_like(weight)
+            dout_gather_idx = fwd_scatter_idx
+            input_gather_idx = fwd_gather_idx
+
+            for r, s in dout_gather_idx.keys():
+                p_dout = dout_features[dout_gather_idx[(r, s)]]
+                p_in = features[input_gather_idx[(r, s)]]
+
+                # print(f'p_dout.t(): {p_dout.t().shape}')
+                # print(f'p_in: {p_in.shape}')
+                if memory_format == 'channel_first':
+                    dweight[:, :, r, s] += p_dout.t() @ p_in
+                elif memory_format == 'channel_last':
+                    dweight[:, r, s, :] += p_dout.t() @ p_in
+                else:
+                    raise ValueError(f"memory_format: {memory_format} is not supported, only support 'channel_first' or 'channel_last'")
+
+        dbias = None
+        if ctx.bias_requires_grad:
+            dbias = dout_features.sum(dim=0)
+        
+        return dfeatures, None, None, None, None, dweight, dbias, None, None, None, None
+
+
+naive_submconv2d_2 = _naive_submconv2d_2.apply

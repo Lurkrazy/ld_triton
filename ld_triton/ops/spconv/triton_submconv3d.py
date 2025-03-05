@@ -23,7 +23,7 @@ def build_subm_conv_hash_table(indices: torch.Tensor, spatial_shape):
 
 
 @triton.jit
-def linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, key, kv_size, hash_size, empty_key_int, BLOCK_SIZE: tl.constexpr):
+def linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, key, kv_size, hash_size, empty_key_uint, BLOCK_SIZE: tl.constexpr):
     offsets = tl.arange(0, BLOCK_SIZE)
     kv_mask = offsets < kv_size
     # hash
@@ -38,27 +38,27 @@ def linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, key, kv_s
     # we shift the key by 1, so the key = 0 will not cause the hash(k) = 0
     key += 1
 
-    key = tl.where(kv_mask, key, empty_key_int).to(tl.uint32)
+    key = tl.where(kv_mask, key, empty_key_uint).to(tl.uint32)
     
     slot = tl.where(kv_mask, key.to(tl.uint32) % hash_size.to(tl.uint32), hash_size)
-    key_target = tl.load(table_key_ptr + slot, mask=kv_mask, other=empty_key_int + 1)
+    key_target = tl.load(table_key_ptr + slot, mask=kv_mask, other=empty_key_uint + 1)
     # find a slot, this slot has a key is the same as the current key, break
     mask_1 = (key_target == key) & kv_mask
-    # find a slot, this slot has a key is the same as empty_key_int, break
-    mask_2 = (key_target == empty_key_int) & kv_mask
-    # find a slot, this slot has a key is diffrent of current key and empty_key_int, continue to find the next slot
-    mask_3 = (key_target != key) & (key_target != empty_key_int) & (key_target != empty_key_int+ 1 ) & kv_mask
-    # find a slot, key is the same as the current key or empty_key_int, record the slot is used
+    # find a slot, this slot has a key is the same as empty_key_uint, break
+    mask_2 = (key_target == empty_key_uint) & kv_mask
+    # find a slot, this slot has a key is diffrent of current key and empty_key_uint, continue to find the next slot
+    mask_3 = (key_target != key) & (key_target != empty_key_uint) & (key_target != empty_key_uint+ 1 ) & kv_mask
+    # find a slot, key is the same as the current key or empty_key_uint, record the slot is used
     mask = mask_1 | mask_2
     # there is no slot match mask_1 or mask_2 or mask_3 break
     broke_mask = mask_1 | mask_2 | mask_3
 
-    val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_int)
+    val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_uint)
 
     is_broke = tl.sum(broke_mask.to(tl.int32), axis=0)
     total_mask = tl.where(mask, False, False)
 
-    res_val = tl.full((BLOCK_SIZE, ), empty_key_int, dtype=tl.uint32)
+    res_val = tl.full((BLOCK_SIZE, ), empty_key_uint, dtype=tl.uint32)
     res_val = tl.where(mask_1, val, res_val)
     res_slot = tl.full((BLOCK_SIZE, ), -1, dtype=tl.int32)
     res_slot = tl.where(mask_1, slot, res_slot)
@@ -72,15 +72,15 @@ def linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, key, kv_s
         # table key: 1, 2, 3, 4, 5, 6, 7, 8
         # find  key: 9, 9, 3, 4, 5, 6, 7, 8
         #           2, 3, 4, 5, 6, 7, 8, 9
-        # key_target other value is empty_key_int + 1
-        key_target = tl.load(table_key_ptr + slot, mask=(kv_mask & ~total_mask), other=empty_key_int + 1)
+        # key_target other value is empty_key_uint + 1
+        key_target = tl.load(table_key_ptr + slot, mask=(kv_mask & ~total_mask), other=empty_key_uint + 1)
         # find a slot, this slot has a key is the same as the current key, break
         mask_1 = (key_target == key) & kv_mask & ~total_mask
-        # find a slot, this slot has a key is the same as empty_key_int, break
-        mask_2 = (key_target == empty_key_int) & kv_mask & ~total_mask
-        # find a slot, this slot has a key is diffrent of current key and empty_key_int, continue to find the next slot
-        mask_3 = (key_target != key) & (key_target != empty_key_int) & (key_target != empty_key_int+ 1 ) & kv_mask & ~total_mask
-        # find a slot, key is the same as the current key or empty_key_int, record the slot is used
+        # find a slot, this slot has a key is the same as empty_key_uint, break
+        mask_2 = (key_target == empty_key_uint) & kv_mask & ~total_mask
+        # find a slot, this slot has a key is diffrent of current key and empty_key_uint, continue to find the next slot
+        mask_3 = (key_target != key) & (key_target != empty_key_uint) & (key_target != empty_key_uint+ 1 ) & kv_mask & ~total_mask
+        # find a slot, key is the same as the current key or empty_key_uint, record the slot is used
         mask = mask_1 | mask_2
 
         # find a slot, key is the same as the current key, store the value
@@ -88,7 +88,7 @@ def linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, key, kv_s
         mask_broke = mask_1 | mask_2 | mask_3
         is_broke = tl.sum(mask_broke.to(tl.int32), axis=0)
         if is_store != 0:
-            val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_int)
+            val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_uint)
             res_val = tl.where(mask_1, val, res_val)
             res_slot = tl.where(mask_1, slot, res_slot)
         # these code is used to debug
@@ -100,7 +100,7 @@ def linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, key, kv_s
 
 
 @triton.jit
-def calc_subm_conv_indices_kernel(table_key_ptr, table_val_ptr, hash_size, empty_key_int,
+def calc_subm_conv_indices_kernel(table_key_ptr, table_val_ptr, hash_size, empty_key_uint,
                                   indices_ptr,
                                   gather_idx_ptr, scatter_idx_ptr, indice_num_per_loc,
                                   num_indices_in, 
@@ -139,7 +139,7 @@ def calc_subm_conv_indices_kernel(table_key_ptr, table_val_ptr, hash_size, empty
         center_p_slot, _ = linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, 
                                                                 center_p_idx,
                                                                 BLOCK_SIZE, hash_size, 
-                                                                empty_key_int, BLOCK_SIZE)
+                                                                empty_key_uint, BLOCK_SIZE)
         mask_mod_0 = (hw_0 + pad_hw_0 - rs_0 * dil_hw_0) % str_hw_0 == 0
         mask_mod_1 = (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) % str_hw_1 == 0
         mask_mod_2 = (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) % str_hw_2 == 0
@@ -162,7 +162,7 @@ def calc_subm_conv_indices_kernel(table_key_ptr, table_val_ptr, hash_size, empty
                 p_out_slot, idx = linear_hash_table_lookup_offset_impl(table_key_ptr, table_val_ptr, 
                                                                                 p_out_idx,
                                                                                 BLOCK_SIZE, hash_size, 
-                                                                                empty_key_int, BLOCK_SIZE)
+                                                                                empty_key_uint, BLOCK_SIZE)
                 idx = tl.where(p_out_slot != -1, idx, -1)
                 i_in = pid_0 * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
                 gather_idx_offs = pid_1 * num_indices_in + i_in
@@ -171,7 +171,7 @@ def calc_subm_conv_indices_kernel(table_key_ptr, table_val_ptr, hash_size, empty
                 rotate_gather_idx_offs = (RS - 1 - pid_1) * num_indices_in + i_in
                 rotate_scatter_idx_offs = (RS - 1 - pid_1) * num_indices_in + i_in
 
-                filter_mask = (p_out_slot != -1) & (i_in < num_indices_in)
+                filter_mask = mask_mod & mask_pq & (p_out_slot != -1) & (i_in < num_indices_in)
 
                 # in[store_mask]
                 ss = tl.sum(filter_mask.to(tl.int32), axis=0)
@@ -217,7 +217,7 @@ def calc_subm_conv_indices(
     grid = (triton.cdiv(num_indices_in, BLOCK_SIZE), RS // 2 + 1)
 
     calc_subm_conv_indices_kernel[grid](
-        table._table_key, table._table_val, table._hash_size, table._empty_key_int,
+        table._table_key, table._table_val, table._hash_size, table._empty_key_uint,
         indices,
         gather_idx, scatter_idx, indice_num_per_loc,
         num_indices_in,
@@ -259,7 +259,7 @@ def generate_subm_conv_inds(indices,
     # # sort is cost too much time
     # gather_idx, _ = torch.sort(gather_idx, descending=True)
     # scatter_idx, _ = torch.sort(scatter_idx, descending=True)
-    return gather_idx, scatter_idx, indice_num_per_loc
+    return indices, gather_idx, scatter_idx, indice_num_per_loc
 
 
 def get_indice_pairs(indices,
@@ -319,7 +319,7 @@ class _triton_submconv3d(torch.autograd.Function):
             end_get_indice_pairs = torch.cuda.Event(enable_timing=True)
             start_get_indice_pairs.record()
 
-        gather_idx, scatter_idx, indice_num_per_loc = get_indice_pairs(indices,
+        out_indices, gather_idx, scatter_idx, indice_num_per_loc = get_indice_pairs(indices,
                         HW_0, HW_1, HW_2,
                         PQ_0, PQ_1, PQ_2,
                         RS_0, RS_1, RS_2,
@@ -338,7 +338,6 @@ class _triton_submconv3d(torch.autograd.Function):
             end_matmul = torch.cuda.Event(enable_timing=True)
             start_matmul.record()
 
-        out_indices = indices
         out_num_points = len(out_indices)
         out_features = torch.zeros(out_num_points, K, dtype=features.dtype, device=features.device)
        

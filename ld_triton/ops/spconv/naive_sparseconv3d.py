@@ -3,7 +3,7 @@ import torch
 
 
 # [SECOND: Sparsely Embedded Convolutional Detection] https://www.mdpi.com/1424-8220/18/10/3337/pdf?version=1538798176
-class _naive_spconv3d(torch.autograd.Function):
+class _naive_sparseconv3d(torch.autograd.Function):
     @staticmethod
     def forward(ctx,                 
                 features: torch.Tensor,
@@ -16,18 +16,13 @@ class _naive_spconv3d(torch.autograd.Function):
                 bias: torch.Tensor = None,
                 stride: tuple = (1, 1),
                 padding: tuple = (0, 0),
-                dilation: tuple = (1, 1),
-                memory_format: str = 'channel_last'):
-        assert memory_format == 'channel_last'
+                dilation: tuple = (1, 1)):
         str_0, str_1, str_2 = stride
         pad_0, pad_1, pad_2 = padding
         dil_0, dil_1, dil_2 = dilation
         num_points = len(features)
         
-        if memory_format == 'channel_first':
-            K, C, RS_0, RS_1, RS_2 = weight.shape
-        elif memory_format == 'channel_last':
-            K, RS_0, RS_1, RS_2, C = weight.shape
+        K, RS_0, RS_1, RS_2, C = weight.shape
 
         PQ_0 = (HW_0 + 2 * pad_0 - dil_0 * (RS_0 - 1) - 1) // str_0 + 1
         PQ_1 = (HW_1 + 2 * pad_1 - dil_1 * (RS_1 - 1) - 1) // str_1 + 1
@@ -67,12 +62,7 @@ class _naive_spconv3d(torch.autograd.Function):
         out_num_points = len(out_indices)
         out_features = torch.zeros(out_num_points, K, dtype=features.dtype, device=features.device)
         for rs_0, rs_1, rs_2 in gather_idx.keys():
-            if memory_format == 'channel_first':
-                w = weight[:, :, rs_0, rs_1, rs_2]
-            elif memory_format == 'channel_last':
-                w = weight[:, rs_0, rs_1, rs_2, :]
-            else:
-                raise ValueError(f"memory_format: {memory_format} is not supported, only support 'channel_first' or 'channel_last'")
+            w = weight[:, rs_0, rs_1, rs_2, :]
             p_in = features[gather_idx[(rs_0, rs_1, rs_2)]]
             p_out = p_in @ w.t()
             out_features[scatter_idx[(rs_0, rs_1, rs_2)]] += p_out
@@ -95,7 +85,6 @@ class _naive_spconv3d(torch.autograd.Function):
         ctx.RS_0 = RS_0
         ctx.RS_1 = RS_1
         ctx.RS_2 = RS_2
-        ctx.memory_format = memory_format
         if bias is None:
             ctx.bias_requires_grad = False
         else:
@@ -125,7 +114,6 @@ class _naive_spconv3d(torch.autograd.Function):
         str_0, str_1, str_2 = stride
         pad_0, pad_1, pad_2 = padding
         dil_0, dil_1, dil_2 = dilation
-        memory_format = ctx.memory_format
 
         dfeatures = None
         if features.requires_grad:
@@ -157,13 +145,7 @@ class _naive_spconv3d(torch.autograd.Function):
             # print(f'scatter_idx: {scatter_idx}')
 
             for rs_0, rs_1, rs_2 in gather_idx.keys():
-                if memory_format == 'channel_first':
-                    w = weight[:, :, rs_0, rs_1, rs_2]
-                elif memory_format == 'channel_last':
-                    w = weight[:, rs_0, rs_1, rs_2, :]
-                else:
-                    raise ValueError(f"memory_format: {memory_format} is not supported, only support 'channel_first' or 'channel_last'")
-
+                w = weight[:, rs_0, rs_1, rs_2, :]
                 p_dout = dout_features[gather_idx[(rs_0, rs_1, rs_2)]]
                 p_din = p_dout @ w
                 dfeatures[scatter_idx[(rs_0, rs_1, rs_2)]] += p_din
@@ -200,12 +182,7 @@ class _naive_spconv3d(torch.autograd.Function):
 
                 # print(f'p_dout.t(): {p_dout.t().shape}')
                 # print(f'p_in: {p_in.shape}')
-                if memory_format == 'channel_first':
-                    dweight[:, :, rs_0, rs_1, rs_2] += p_dout.t() @ p_in
-                elif memory_format == 'channel_last':
-                    dweight[:, rs_0, rs_1, rs_2, :] += p_dout.t() @ p_in
-                else:
-                    raise ValueError(f"memory_format: {memory_format} is not supported, only support 'channel_first' or 'channel_last'")
+                dweight[:, rs_0, rs_1, rs_2, :] += p_dout.t() @ p_in
 
         dbias = None
         if ctx.bias_requires_grad:
@@ -214,4 +191,4 @@ class _naive_spconv3d(torch.autograd.Function):
         return dfeatures, None, None, None, None, None, dweight, dbias, None, None, None, None
 
 
-naive_sparse_conv3d = _naive_spconv3d.apply
+naive_sparseconv3d = _naive_sparseconv3d.apply

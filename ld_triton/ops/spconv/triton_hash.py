@@ -5,15 +5,15 @@ import triton.language as tl
 
 
 @triton.jit
-def linear_hash_table_insert(table_key_ptr, table_val_ptr, key_ptr, val_ptr, num_act_in_real, hash_size, empty_key_int, BLOCK_SIZE: tl.constexpr):
+def linear_hash_table_insert(table_key_ptr, table_val_ptr, key_ptr, val_ptr, num_act_in_real, hash_size, empty_key_uint, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(0)
     kv_start = pid * BLOCK_SIZE
     offsets = tl.arange(0, BLOCK_SIZE)
     key_ptrs = key_ptr +  (kv_start + offsets) % hash_size
     val_ptrs = val_ptr +  (kv_start + offsets) % hash_size
     kv_mask = (kv_start + offsets) < num_act_in_real
-    key = tl.load(key_ptrs, mask=kv_mask, other=empty_key_int)
-    val = tl.load(val_ptrs, mask=kv_mask, other=empty_key_int)
+    key = tl.load(key_ptrs, mask=kv_mask, other=empty_key_uint)
+    val = tl.load(val_ptrs, mask=kv_mask, other=empty_key_uint)
 
     # hash
     key ^= key >> 16
@@ -27,9 +27,9 @@ def linear_hash_table_insert(table_key_ptr, table_val_ptr, key_ptr, val_ptr, num
     # we shift the key by 1, so the key = 0 will not cause the hash(k) = 0
     key += 1
 
-    key = tl.where(kv_mask, key, empty_key_int).to(tl.uint32)
+    key = tl.where(kv_mask, key, empty_key_uint).to(tl.uint32)
     slot = tl.where(kv_mask, key.to(tl.uint32) % hash_size.to(tl.uint32), hash_size)
-    cmp = tl.full((BLOCK_SIZE, ), empty_key_int, dtype=tl.uint32)
+    cmp = tl.full((BLOCK_SIZE, ), empty_key_uint, dtype=tl.uint32)
     # if table_key_ptr + slot address is illegal, the prev = 0
     prev = tl.atomic_cas(table_key_ptr + slot, cmp, key)
     prev = tl.where(kv_mask, prev, cmp)
@@ -44,7 +44,7 @@ def linear_hash_table_insert(table_key_ptr, table_val_ptr, key_ptr, val_ptr, num
         
         slot = tl.where(kv_mask & ~total_mask, (slot + 1) % hash_size.to(tl.uint32), hash_size)
         
-        key = tl.where(total_mask, empty_key_int, key).to(tl.uint32)
+        key = tl.where(total_mask, empty_key_uint, key).to(tl.uint32)
         prev = tl.atomic_cas(table_key_ptr + slot, cmp, key)
 
         # find a slot, this slot has no key or the key is the same as the current key, break
@@ -60,7 +60,7 @@ def linear_hash_table_insert(table_key_ptr, table_val_ptr, key_ptr, val_ptr, num
 
 
 @triton.jit
-def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_ptr, val_ptr, kv_size, hash_size, empty_key_int, BLOCK_SIZE: tl.constexpr):
+def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_ptr, val_ptr, kv_size, hash_size, empty_key_uint, BLOCK_SIZE: tl.constexpr):
     pid = tl.program_id(0)
     kv_start = pid * BLOCK_SIZE
     offsets = tl.arange(0, BLOCK_SIZE)
@@ -68,7 +68,7 @@ def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_
     val_ptrs = val_ptr +  (kv_start + offsets) % hash_size
     slot_ptrs = slot_ptr + (kv_start + offsets) % hash_size
     kv_mask = (kv_start + offsets) < kv_size
-    key = tl.load(key_ptrs, mask=kv_mask, other=empty_key_int)
+    key = tl.load(key_ptrs, mask=kv_mask, other=empty_key_uint)
     # hash
     key ^= key >> 16
     key *= 0x85ebca6b
@@ -80,21 +80,21 @@ def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_
     # key = 0 or key = 0xFFFFFFFF the hash(k) = 0
     # we shift the key by 1, so the key = 0 will not cause the hash(k) = 0
     key += 1 
-    key = tl.where(kv_mask, key, empty_key_int).to(tl.uint32)
+    key = tl.where(kv_mask, key, empty_key_uint).to(tl.uint32)
     
     slot = tl.where(kv_mask, key.to(tl.uint32) % hash_size.to(tl.uint32), hash_size)
-    key_target = tl.load(table_key_ptr + slot, mask=kv_mask, other=empty_key_int + 1)
+    key_target = tl.load(table_key_ptr + slot, mask=kv_mask, other=empty_key_uint + 1)
     # find a slot, this slot has a key is the same as the current key, break
     mask_1 = (key_target == key) & kv_mask
-    # find a slot, this slot has a key is the same as empty_key_int, break
-    mask_2 = (key_target == empty_key_int) & kv_mask
-    # find a slot, this slot has a key is diffrent of current key and empty_key_int, continue to find the next slot
-    mask_3 = (key_target != key) & (key_target != empty_key_int) & (key_target != empty_key_int+ 1 ) & kv_mask
-    # find a slot, key is the same as the current key or empty_key_int, record the slot is used
+    # find a slot, this slot has a key is the same as empty_key_uint, break
+    mask_2 = (key_target == empty_key_uint) & kv_mask
+    # find a slot, this slot has a key is diffrent of current key and empty_key_uint, continue to find the next slot
+    mask_3 = (key_target != key) & (key_target != empty_key_uint) & (key_target != empty_key_uint+ 1 ) & kv_mask
+    # find a slot, key is the same as the current key or empty_key_uint, record the slot is used
     mask = mask_1 | mask_2
     # there is no slot match mask_1 or mask_2 or mask_3 break
     broke_mask = mask_1 | mask_2 | mask_3
-    val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_int)
+    val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_uint)
     tl.store(val_ptrs, val, mask=mask_1)
     tl.store(slot_ptrs, slot, mask=mask_1)
     
@@ -110,15 +110,15 @@ def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_
         # table key: 1, 2, 3, 4, 5, 6, 7, 8
         # find  key: 9, 9, 3, 4, 5, 6, 7, 8
         #           2, 3, 4, 5, 6, 7, 8, 9
-        # key_target other value is empty_key_int + 1
-        key_target = tl.load(table_key_ptr + slot, mask=(kv_mask & ~total_mask), other=empty_key_int + 1)
+        # key_target other value is empty_key_uint + 1
+        key_target = tl.load(table_key_ptr + slot, mask=(kv_mask & ~total_mask), other=empty_key_uint + 1)
         # find a slot, this slot has a key is the same as the current key, break
         mask_1 = (key_target == key) & kv_mask & ~total_mask
-        # find a slot, this slot has a key is the same as empty_key_int, break
-        mask_2 = (key_target == empty_key_int) & kv_mask & ~total_mask
-        # find a slot, this slot has a key is diffrent of current key and empty_key_int, continue to find the next slot
-        mask_3 = (key_target != key) & (key_target != empty_key_int) & (key_target != empty_key_int+ 1 ) & kv_mask & ~total_mask
-        # find a slot, key is the same as the current key or empty_key_int, record the slot is used
+        # find a slot, this slot has a key is the same as empty_key_uint, break
+        mask_2 = (key_target == empty_key_uint) & kv_mask & ~total_mask
+        # find a slot, this slot has a key is diffrent of current key and empty_key_uint, continue to find the next slot
+        mask_3 = (key_target != key) & (key_target != empty_key_uint) & (key_target != empty_key_uint+ 1 ) & kv_mask & ~total_mask
+        # find a slot, key is the same as the current key or empty_key_uint, record the slot is used
         mask = mask_1 | mask_2
 
         # find a slot, key is the same as the current key, store the value
@@ -126,7 +126,7 @@ def linear_hash_table_lookup_offset(table_key_ptr, table_val_ptr, key_ptr, slot_
         mask_broke = mask_1 | mask_2 | mask_3
         is_broke = tl.sum(mask_broke.to(tl.int32), axis=0)
         if is_store != 0:
-            val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_int)
+            val = tl.load(table_val_ptr + slot, mask=mask_1, other=empty_key_uint)
             tl.store(val_ptrs, val, mask=mask_1)
             tl.store(slot_ptrs, slot, mask=mask_1)
         is_store_2 = tl.sum(mask_2.to(tl.int32), axis=0)
@@ -141,9 +141,9 @@ class LinearHashTableSplit(object):
         self._kv_size = kv_size
         self._rate = rate
         self._hash_size = hash_size
-        self._empty_key_int = 0xFFFFFFFF - 1
-        self._table_key = torch.full((hash_size + 1, ), self._empty_key_int, dtype=torch.uint32, device='cuda')
-        self._table_val = torch.full((hash_size + 1, ), self._empty_key_int, dtype=torch.uint32, device='cuda')
+        self._empty_key_uint = 0xFFFFFFFF - 1
+        self._table_key = torch.full((hash_size + 1, ), self._empty_key_uint, dtype=torch.uint32, device='cuda')
+        self._table_val = torch.full((hash_size + 1, ), self._empty_key_uint, dtype=torch.uint32, device='cuda')
         self._dtype = torch.uint32
         self._device = 'cuda'
 
@@ -169,7 +169,7 @@ class LinearHashTableSplit(object):
                                        val,
                                        num_act_in_real,
                                        self._hash_size,
-                                       self._empty_key_int,
+                                       self._empty_key_uint,
                                        BLOCK_SIZE)
  
     def lookup_offset(self, key: torch.Tensor):
@@ -186,7 +186,7 @@ class LinearHashTableSplit(object):
         else:
             BLOCK_SIZE = 1024
         
-        val = torch.full((kv_size, ), self._empty_key_int, dtype=self._dtype , device=self._device )
+        val = torch.full((kv_size, ), self._empty_key_uint, dtype=self._dtype , device=self._device )
         slot = torch.full((kv_size, ), -1, dtype=torch.int32 , device=self._device )
         # slot = torch.empty((kv_size, ), dtype=torch.int32 , device=self._device )
         grid = lambda META: (triton.cdiv(kv_size, BLOCK_SIZE),)
@@ -197,12 +197,12 @@ class LinearHashTableSplit(object):
                                         val,
                                         len(key),
                                         self._hash_size,
-                                        self._empty_key_int,
+                                        self._empty_key_uint,
                                         BLOCK_SIZE)
         return slot, val
     
     def __str__(self):
-        return f'LinearHashTableSplit(kv_size={self._kv_size}, rate={self._rate}, hash_size={self._hash_size}, empty_key_int={self._empty_key_int}, table_key={self._table_key}, table_val={self._table_val})'
+        return f'LinearHashTableSplit(kv_size={self._kv_size}, rate={self._rate}, hash_size={self._hash_size}, empty_key_uint={self._empty_key_uint}, table_key={self._table_key}, table_val={self._table_val})'
     
 
 def build_hash(indices: torch.Tensor, spatial_shape, rate: float = 2.0):

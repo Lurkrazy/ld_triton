@@ -20,7 +20,7 @@ class _naive_submconv3d(torch.autograd.Function):
                 padding: int = (0, 0, 0),
                 dilation: int = (1, 1, 1),
                 memory_format: str = 'channel_last'):
-        _fwd_debug = True
+        _fwd_debug = False
         assert memory_format == 'channel_last'
         # why? Adapted from spconv
         str_hw_0, str_hw_1, str_hw_2 = 1, 1, 1
@@ -48,7 +48,11 @@ class _naive_submconv3d(torch.autograd.Function):
         gather_idx = {}
         scatter_idx = {}
         out_indices_list = indices.tolist()
-        out_indices_dict = {tuple(value): index for index, value in enumerate(out_indices_list)}
+        # out_indices_dict = {tuple(value): index for index, value in enumerate(out_indices_list)}
+        PQ_stride_0 = PQ_0 * PQ_1 * PQ_2
+        PQ_stride_1 = PQ_1 * PQ_2
+        PQ_stride_2 = PQ_2
+        out_indices_dict = {value[0] * PQ_stride_0 + value[1] * PQ_stride_1 + value[2] * PQ_stride_2 + value[3]: index for index, value in enumerate(out_indices_list)}
         # print(f'indices: {indices}')
         center_rs_0 = RS_0 // 2
         center_rs_1 = RS_1 // 2
@@ -81,11 +85,12 @@ class _naive_submconv3d(torch.autograd.Function):
                     center_hw_1 = hw_1 + (center_rs_1 - rs_1) * dil_hw_1
                     center_hw_2 = hw_2 + (center_rs_2 - rs_2) * dil_hw_2
                     center_p = tuple([bs, center_hw_0, center_hw_1, center_hw_2])
+                    center_p_idx = center_p[0] * PQ_stride_0 + center_p[1] * PQ_stride_1 + center_p[2] * PQ_stride_2 + center_p[3]
                     # print(f'center_p: {center_p}')
                     if ((hw_0 + pad_hw_0 - rs_0 * dil_hw_0) % str_hw_0 == 0 and 
                         (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) % str_hw_1 == 0 and
                         (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) % str_hw_2 == 0 and
-                        center_p in out_indices_dict):
+                        center_p_idx in out_indices_dict):
                         pq_0 = (hw_0 + pad_hw_0 - rs_0 * dil_hw_0) // str_hw_0
                         pq_1 = (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) // str_hw_1
                         pq_2 = (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) // str_hw_2
@@ -94,7 +99,8 @@ class _naive_submconv3d(torch.autograd.Function):
                             assert center_hw_1 == pq_1
                             assert center_hw_2 == pq_2
                             p_out = tuple([bs, pq_0, pq_1, pq_2])
-                            idx = out_indices_dict[p_out]
+                            p_out_idx = p_out[0] * PQ_stride_0 + p_out[1] * PQ_stride_1 + p_out[2] * PQ_stride_2 + p_out[3]
+                            idx = out_indices_dict[p_out_idx]
                             gather_idx[(rs_0, rs_1, rs_2)][i_in] = i_in
                             gather_idx[(RS_0 - 1 - rs_0, RS_1 - 1 - rs_1, RS_2 - 1 - rs_2)][i_in] = idx
 

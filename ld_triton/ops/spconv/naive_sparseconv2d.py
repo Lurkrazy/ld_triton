@@ -3,7 +3,7 @@ import torch
 
 
 # [SECOND: Sparsely Embedded Convolutional Detection] https://www.mdpi.com/1424-8220/18/10/3337/pdf?version=1538798176
-class _naive_spconv2d(torch.autograd.Function):
+class _naive_sparseconv2d(torch.autograd.Function):
     @staticmethod
     def forward(ctx,                 
                 features: torch.Tensor,
@@ -202,4 +202,4 @@ class _naive_spconv2d(torch.autograd.Function):
         return dfeatures, None, None, None, None, dweight, dbias, None, None, None, None
 
 
-naive_sparse_conv2d = _naive_spconv2d.apply
+naive_sparseconv2d = _naive_sparseconv2d.apply

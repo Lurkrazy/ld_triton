@@ -1,7 +1,7 @@
 
 import torch
 from ld_triton.modules.spconv.utils import SparseConvTensor
-from ld_triton.ops.spconv.naive_spconv2d import naive_sparse_conv2d
+from ld_triton.ops.spconv.naive_sparseconv2d import naive_sparseconv2d
 
 
 # only support channel_last
@@ -58,7 +58,7 @@ class NaiveSparseConv2d(torch.nn.Module):
         indices = x.indices
         batch_size = x.batch_size
         H, W = x.spatial_shape
-        naive_out_features, naive_out_indices, P, Q = naive_sparse_conv2d(features, indices, H, W, batch_size, self.weight, self.bias, (self.str_h, self.str_w), (self.pad_h, self.pad_w), (self.dil_h, self.dil_w))
+        naive_out_features, naive_out_indices, P, Q = naive_sparseconv2d(features, indices, H, W, batch_size, self.weight, self.bias, (self.str_h, self.str_w), (self.pad_h, self.pad_w), (self.dil_h, self.dil_w))
         output = SparseConvTensor(naive_out_features, naive_out_indices, [P, Q], batch_size)
         print(f'NaiveSparseConv2d: {H, W, P, Q}')
         return output
