@@ -11,31 +11,21 @@ def build_conv_hash_table_kernel(
     table_key_ptr, table_val_ptr, hash_size, empty_key_uint,
     indices_out_ptr, 
     indice_pairs_for_uniq_ptr,
-    num_indices,
-    PQ_0, PQ_1, PQ_2,
+    num_act_in_real,
+    P, Q,
     BLOCK_SIZE: tl.constexpr,
 ):
-    pid_0 = tl.program_id(0)
+    # 1. build table
+    pid = tl.program_id(0)
+    kv_start = pid * BLOCK_SIZE
     offsets = tl.arange(0, BLOCK_SIZE)
-    indice_pairs_for_uniq_offs = pid_0 * BLOCK_SIZE + offsets
-    mask = indice_pairs_for_uniq_offs < num_indices
-    output_coord_offset = tl.load(indice_pairs_for_uniq_ptr + indice_pairs_for_uniq_offs, mask=mask)
-    bs = output_coord_offset // (PQ_0 * PQ_1 * PQ_2)
-    pq_0 = (output_coord_offset % (PQ_0 * PQ_1 * PQ_2)) // (PQ_1 * PQ_2)
-    pq_1 = (output_coord_offset % (PQ_1 * PQ_2)) // PQ_2
-    pq_2 = output_coord_offset % PQ_2
-    
-    bs_offs = (pid_0 * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)) * 4
-    pq_0_offs = bs_offs + 1
-    pq_1_offs = bs_offs + 2
-    pq_2_offs = bs_offs + 3
-    tl.store(indices_out_ptr + bs_offs, bs, bs_offs < 4 * num_indices)
-    tl.store(indices_out_ptr + pq_0_offs, pq_0, pq_0_offs < 4 * num_indices)
-    tl.store(indices_out_ptr + pq_1_offs, pq_1, pq_1_offs < 4 * num_indices)
-    tl.store(indices_out_ptr + pq_2_offs, pq_2, pq_2_offs < 4 * num_indices)
+    key_ptrs = indice_pairs_for_uniq_ptr +  (kv_start + offsets) 
+    kv_mask = (kv_start + offsets) < num_act_in_real
+    key = tl.load(key_ptrs, mask=kv_mask, other=empty_key_uint)
+    output_coord_offset = tl.where(kv_mask, key, empty_key_uint)
+    val = tl.where(kv_mask, (kv_start + offsets).to(tl.uint32), empty_key_uint).to(tl.uint32)
 
     # hash
-    key = output_coord_offset
     key ^= key >> 16
     key *= 0x85ebca6b
     key ^= key >> 13
@@ -46,8 +36,7 @@ def build_conv_hash_table_kernel(
     # key = 0 or key = 0xFFFFFFFF the hash(k) = 0
     # we shift the key by 1, so the key = 0 will not cause the hash(k) = 0
     key += 1
-    
-    kv_mask = indice_pairs_for_uniq_offs < num_indices
+
     key = tl.where(kv_mask, key, empty_key_uint).to(tl.uint32)
     slot = tl.where(kv_mask, key.to(tl.uint32) % hash_size.to(tl.uint32), hash_size)
     cmp = tl.full((BLOCK_SIZE, ), empty_key_uint, dtype=tl.uint32)
@@ -56,7 +45,6 @@ def build_conv_hash_table_kernel(
     prev = tl.where(kv_mask, prev, cmp)
     mask = tl.where(prev == cmp or prev == key, True, False) & kv_mask
     
-    val = indice_pairs_for_uniq_offs
     tl.store(table_val_ptr + slot, val, mask=mask)
     is_broke = tl.sum(mask.to(tl.uint64), axis=0)
     total_mask = tl.where(cmp, False, False)
@@ -80,13 +68,28 @@ def build_conv_hash_table_kernel(
         if is_store != 0:
             tl.store(table_val_ptr + slot, val, mask=mask)
 
+    # 2. build indices_out
+    bs = output_coord_offset // (P * Q)
+    p = (output_coord_offset % (P * Q)) // Q
+    q = output_coord_offset % Q
+    
+    bs_offs = (pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)) * 3
+    p_offs = bs_offs + 1
+    q_offs = bs_offs + 2
+
+    tl.store(indices_out_ptr + bs_offs, bs, bs_offs < 3 * num_act_in_real)
+    tl.store(indices_out_ptr + p_offs, p, p_offs < 3 * num_act_in_real)
+    tl.store(indices_out_ptr + q_offs, q, q_offs < 3 * num_act_in_real)
+
 
 def build_conv_hash_table(
     indices_out: torch.Tensor, 
     indice_pairs_for_uniq,
-    PQ_0, PQ_1, PQ_2
+    P, Q
 ):
+    
     num_indices = indices_out.shape[0]
+    assert len(indice_pairs_for_uniq) == num_indices, f'{len(indice_pairs_for_uniq)} != {num_indices}'
     table = LinearHashTableSplit(num_indices, rate = 2.0)
 
     if num_indices < 1024:
@@ -95,15 +98,111 @@ def build_conv_hash_table(
         BLOCK_SIZE = 1024
 
     grid = (triton.cdiv(num_indices, BLOCK_SIZE), )
+    indice_pairs_for_uniq = indice_pairs_for_uniq.to(torch.uint32)
     build_conv_hash_table_kernel[grid](
         table._table_key, table._table_val, table._hash_size, table._empty_key_uint,
         indices_out,
         indice_pairs_for_uniq,
         num_indices,
-        PQ_0, PQ_1, PQ_2,
+        P, Q,
         BLOCK_SIZE,
     )
     return table
+
+
+@triton.jit
+def calc_conv_indices_stage1_kernel(      
+    indices_ptr,
+    gather_idx_ptr,
+    scatter_idx_ptr,
+    indice_pairs_uniq_ptr,
+    indice_num_per_loc_ptr,
+    num_indices_in,
+    indices_pair_size,
+    H, W,
+    P, Q,
+    R, S,
+    str_h, str_w,
+    pad_h, pad_w,
+    dil_h, dil_w,
+    BLOCK_SIZE: tl.constexpr
+):
+    pid_0 = tl.program_id(0)
+    pid_1 = tl.program_id(1) 
+
+    r = pid_1 // S
+    s = pid_1 % S
+
+    bs_offs = (pid_0 * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)) * 3
+    p_offs = bs_offs + 1
+    q_offs = bs_offs + 2
+
+    bs   = tl.load(indices_ptr + bs_offs + 0, bs_offs < 3 * num_indices_in)
+    h = tl.load(indices_ptr + p_offs, p_offs < 3 * num_indices_in)
+    w = tl.load(indices_ptr + q_offs, q_offs < 3 * num_indices_in)
+    mask_mod_h = (h + pad_h - r * dil_h) % str_h == 0
+    mask_mod_w = (w + pad_w - s * dil_w) % str_w == 0
+    mask_mod = mask_mod_h & mask_mod_w
+    is_mod_broke = tl.sum(mask_mod.to(tl.int32), axis=0)
+    if is_mod_broke != 0:
+        p = (h + pad_h - r * dil_h) // str_h
+        q = (w + pad_w - s * dil_w) // str_w        
+        mask_p = p >= 0 and p < P
+        mask_q = q >= 0 and q < Q
+        mask_pq = mask_p & mask_q
+        is_pq_broke = tl.sum(mask_pq.to(tl.int32), axis=0)
+        if is_pq_broke != 0:
+            p_out_idx = bs * P * Q + p * Q + q
+            i_in = pid_0 * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+            gather_idx_offs = pid_1 * num_indices_in + i_in
+            indice_pairs_uniq_offs = pid_1 * indices_pair_size + i_in
+            filter_mask = mask_mod & mask_pq & (i_in < num_indices_in)
+            ss = tl.sum(filter_mask.to(tl.int32), axis=0)
+            tl.atomic_add(indice_num_per_loc_ptr + pid_1, ss)
+            tl.store(gather_idx_ptr + gather_idx_offs, i_in, mask=filter_mask)
+            tl.store(indice_pairs_uniq_ptr + indice_pairs_uniq_offs, p_out_idx, mask=filter_mask)
+ 
+
+def generate_conv_inds_stage1(
+    indices,
+    gather_idx,
+    scatter_idx,
+    indice_pairs_uniq,
+    indice_num_per_loc,
+    H, W,
+    P, Q,
+    R, S,
+    str_h, str_w,
+    pad_h, pad_w,
+    dil_h, dil_w,
+):
+    num_indices = indices.shape[0]
+    indices_pair_size = indices.shape[0]
+    
+    num_indices_in = indices.shape[0]
+    if num_indices_in < 1024:
+        BLOCK_SIZE = triton.next_power_of_2(triton.cdiv(num_indices_in, 32) * 32)
+    else:
+        BLOCK_SIZE = 1024
+    
+    RS = R * S
+    grid = (triton.cdiv(num_indices_in, BLOCK_SIZE), RS)
+    calc_conv_indices_stage1_kernel[grid](
+        indices,
+        gather_idx,
+        scatter_idx,
+        indice_pairs_uniq,
+        indice_num_per_loc,
+        num_indices,
+        indices_pair_size,
+        H, W,
+        P, Q,
+        R, S,
+        str_h, str_w,
+        pad_h, pad_w,
+        dil_h, dil_w,
+        BLOCK_SIZE,
+    )
 
 
 @triton.jit
@@ -188,135 +287,6 @@ def linear_hash_table_lookup_offset_impl(
 
 
 @triton.jit
-def calc_conv_indices_stage1_kernel(      
-    indices_ptr,
-    gather_idx_ptr,
-    scatter_idx_ptr,
-    indice_pairs_uniq_ptr,
-    indice_num_per_loc_ptr,
-    num_indices_in,
-    indices_pair_size,
-    HW_0, HW_1, HW_2,
-    PQ_0, PQ_1, PQ_2,
-    RS_0, RS_1, RS_2,
-    str_hw_0, str_hw_1, str_hw_2,
-    pad_hw_0, pad_hw_1, pad_hw_2,
-    dil_hw_0, dil_hw_1, dil_hw_2,
-    BLOCK_SIZE: tl.constexpr
-):
-    pid_0 = tl.program_id(0)
-    pid_1 = tl.program_id(1) 
-
-    rs_0 = pid_1 // (RS_1 * RS_2)
-    rs_1 = (pid_1 % (RS_1 * RS_2)) // RS_2
-    rs_2 = pid_1 % RS_2
-
-    center_offsets = (pid_0 * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)) * 4
-    bs   = tl.load(indices_ptr + center_offsets + 0, center_offsets + 0 < 4 * num_indices_in)
-    hw_0 = tl.load(indices_ptr + center_offsets + 1, center_offsets + 1 < 4 * num_indices_in)
-    hw_1 = tl.load(indices_ptr + center_offsets + 2, center_offsets + 2 < 4 * num_indices_in)
-    hw_2 = tl.load(indices_ptr + center_offsets + 3, center_offsets + 3 < 4 * num_indices_in)
-    mask_mod_0 = (hw_0 + pad_hw_0 - rs_0 * dil_hw_0) % str_hw_0 == 0
-    mask_mod_1 = (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) % str_hw_1 == 0
-    mask_mod_2 = (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) % str_hw_2 == 0
-    mask_mod = mask_mod_0 & mask_mod_1 & mask_mod_2
-    is_mod_broke = tl.sum(mask_mod.to(tl.int32), axis=0)
-    if is_mod_broke != 0:
-        pq_0 = (hw_0 + pad_hw_0 - rs_0 * dil_hw_0) // str_hw_0
-        pq_1 = (hw_1 + pad_hw_1 - rs_1 * dil_hw_1) // str_hw_1
-        pq_2 = (hw_2 + pad_hw_2 - rs_2 * dil_hw_2) // str_hw_2
-        
-        mask_pq_0 = pq_0 >= 0 and pq_0 < PQ_0
-        mask_pq_1 = pq_1 >= 0 and pq_1 < PQ_1
-        mask_pq_2 = pq_2 >= 0 and pq_2 < PQ_2
-        mask_pq = mask_pq_0 & mask_pq_1 & mask_pq_2
-        is_pq_broke = tl.sum(mask_pq.to(tl.int32), axis=0)
-        if is_pq_broke != 0:
-            p_out_idx = bs * PQ_0 * PQ_1 * PQ_2 + pq_0 * PQ_1 * PQ_2 + pq_1 * PQ_2 + pq_2
-            i_in = pid_0 * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
-            gather_idx_offs = pid_1 * num_indices_in + i_in
-            indice_pairs_uniq_offs = pid_1 * indices_pair_size + i_in
-            filter_mask = mask_mod & mask_pq & (i_in < num_indices_in)
-            ss = tl.sum(filter_mask.to(tl.int32), axis=0)
-            tl.atomic_add(indice_num_per_loc_ptr + pid_1, ss)
-            tl.store(gather_idx_ptr + gather_idx_offs, i_in, mask=filter_mask)
-            tl.store(indice_pairs_uniq_ptr + indice_pairs_uniq_offs, p_out_idx, mask=filter_mask)
-
-
-def calc_conv_indices_stage1(     
-    indices,
-    gather_idx,
-    scatter_idx,
-    indice_pairs_uniq,
-    indice_num_per_loc,
-    num_indices,
-    indices_pair_size,
-    HW_0, HW_1, HW_2,
-    PQ_0, PQ_1, PQ_2,
-    RS_0, RS_1, RS_2,
-    str_hw_0, str_hw_1, str_hw_2,
-    pad_hw_0, pad_hw_1, pad_hw_2,
-    dil_hw_0, dil_hw_1, dil_hw_2
-):
-    num_indices_in = indices.shape[0]
-    if num_indices_in < 1024:
-        BLOCK_SIZE = triton.next_power_of_2(triton.cdiv(num_indices_in, 32) * 32)
-    else:
-        BLOCK_SIZE = 1024
-    RS = RS_0 * RS_1 * RS_2
-    grid = (triton.cdiv(num_indices_in, BLOCK_SIZE), RS)
-    calc_conv_indices_stage1_kernel[grid](
-        indices,
-        gather_idx,
-        scatter_idx,
-        indice_pairs_uniq,
-        indice_num_per_loc,
-        num_indices,
-        indices_pair_size,
-        HW_0, HW_1, HW_2,
-        PQ_0, PQ_1, PQ_2,
-        RS_0, RS_1, RS_2,
-        str_hw_0, str_hw_1, str_hw_2,
-        pad_hw_0, pad_hw_1, pad_hw_2,
-        dil_hw_0, dil_hw_1, dil_hw_2,
-        BLOCK_SIZE,
-    )
-    
-
-def generate_conv_inds_stage1(
-    indices,
-    gather_idx,
-    scatter_idx,
-    indice_pairs_uniq,
-    indice_num_per_loc,
-    HW_0, HW_1, HW_2,
-    PQ_0, PQ_1, PQ_2,
-    RS_0, RS_1, RS_2,
-    str_hw_0, str_hw_1, str_hw_2,
-    pad_hw_0, pad_hw_1, pad_hw_2,
-    dil_hw_0, dil_hw_1, dil_hw_2
-):
-    num_indices = indices.shape[0]
-    indices_pair_size = indices.shape[0]
-    
-    calc_conv_indices_stage1(
-        indices,
-        gather_idx,
-        scatter_idx,
-        indice_pairs_uniq,
-        indice_num_per_loc,
-        num_indices,
-        indices_pair_size,
-        HW_0, HW_1, HW_2,
-        PQ_0, PQ_1, PQ_2,
-        RS_0, RS_1, RS_2,
-        str_hw_0, str_hw_1, str_hw_2,
-        pad_hw_0, pad_hw_1, pad_hw_2,
-        dil_hw_0, dil_hw_1, dil_hw_2,
-    )
-
-
-@triton.jit
 def calc_conv_indices_stage2_kernel(
     table_key_ptr, table_val_ptr, hash_size, empty_key_uint,
     indice_pairs_uniq_before_sort_ptr,
@@ -344,15 +314,26 @@ def calc_conv_indices_stage2_kernel(
     tl.store(scatter_idx_ptr + scatter_idx_offs, idx, mask=filter_mask)
 
 
-def calc_conv_indices_stage2(
-    table: LinearHashTableSplit,
-    indice_pairs_uniq_before_sort,
-    scatter_idx,
-    num_indices_in,
-    indices_pair_size,
-    RS_0, RS_1, RS_2,
-):
-    RS = RS_0 * RS_1 * RS_2
+def generate_conv_inds_stage2(
+    indices, 
+    gather_idx,
+    scatter_idx, 
+    indice_pairs_uniq, 
+    indice_pairs_uniq_before_sort, 
+    out_inds,
+    indice_num_per_loc, 
+    num_out_act, 
+    H, W,
+    P, Q,
+    R, S,
+    str_h, str_w,
+    pad_h, pad_w,
+    dil_h, dil_w,
+): 
+    table = build_conv_hash_table(out_inds, indice_pairs_uniq, P, Q)
+    num_indices_in = indices.shape[0]
+    indices_pair_size = indices.shape[0]
+    RS = R * S
     if num_indices_in < 1024:
         BLOCK_SIZE = triton.next_power_of_2(triton.cdiv(num_indices_in, 32) * 32)
     else:
@@ -368,45 +349,16 @@ def calc_conv_indices_stage2(
     )
 
 
-def generate_conv_inds_stage2(
-    indices, 
-    gather_idx,
-    scatter_idx, 
-    indice_pairs_uniq, 
-    indice_pairs_uniq_before_sort, 
-    out_inds,
-    indice_num_per_loc, 
-    num_out_act, 
-    HW_0, HW_1, HW_2,
-    PQ_0, PQ_1, PQ_2,
-    RS_0, RS_1, RS_2,
-    str_hw_0, str_hw_1, str_hw_2,
-    pad_hw_0, pad_hw_1, pad_hw_2,
-    dil_hw_0, dil_hw_1, dil_hw_2
-): 
-    table = build_conv_hash_table(out_inds, indice_pairs_uniq, PQ_0, PQ_1, PQ_2)
-
-    num_indices_in = indices.shape[0]
-    calc_conv_indices_stage2(
-        table,
-        indice_pairs_uniq_before_sort,
-        scatter_idx,
-        num_indices_in,
-        num_indices_in,
-        RS_0, RS_1, RS_2,
-    )
-
-
 def get_indice_pairs(
     indices,
-    HW_0, HW_1, HW_2,
-    PQ_0, PQ_1, PQ_2,
-    RS_0, RS_1, RS_2,
-    str_hw_0, str_hw_1, str_hw_2,
-    pad_hw_0, pad_hw_1, pad_hw_2,
-    dil_hw_0, dil_hw_1, dil_hw_2,
+    H, W,
+    P, Q,
+    R, S,
+    str_h, str_w,
+    pad_h, pad_w,
+    dil_h, dil_w,
 ):
-    RS = RS_0 * RS_1 * RS_2
+    RS = R * S
     num_points = indices.shape[0]
     gather_idx = torch.full((RS, num_points), -1, dtype=torch.int32, device=indices.device)
     scatter_idx = torch.full((RS, num_points), -1, dtype=torch.int32, device=indices.device)
@@ -420,13 +372,14 @@ def get_indice_pairs(
         scatter_idx,
         indice_pairs_uniq,
         indice_num_per_loc,
-        HW_0, HW_1, HW_2,
-        PQ_0, PQ_1, PQ_2,
-        RS_0, RS_1, RS_2,
-        str_hw_0, str_hw_1, str_hw_2,
-        pad_hw_0, pad_hw_1, pad_hw_2,
-        dil_hw_0, dil_hw_1, dil_hw_2,
+        H, W,
+        P, Q,
+        R, S,
+        str_h, str_w,
+        pad_h, pad_w,
+        dil_h, dil_w,
     )
+
     uniq_res = indice_pairs_uniq.unique()
     num_act_out = uniq_res.shape[0] - 1
     uniq_res = uniq_res[:-1]
@@ -444,63 +397,58 @@ def get_indice_pairs(
         out_inds,
         indice_num_per_loc, 
         num_act_out, 
-        HW_0, HW_1, HW_2,
-        PQ_0, PQ_1, PQ_2,
-        RS_0, RS_1, RS_2,
-        str_hw_0, str_hw_1, str_hw_2,
-        pad_hw_0, pad_hw_1, pad_hw_2,
-        dil_hw_0, dil_hw_1, dil_hw_2
+        H, W,
+        P, Q,
+        R, S,
+        str_h, str_w,
+        pad_h, pad_w,
+        dil_h, dil_w,
     )
-
     return out_inds, gather_idx, scatter_idx, indice_num_per_loc
 
 
 # [SECOND: Sparsely Embedded Convolutional Detection] https://www.mdpi.com/1424-8220/18/10/3337/pdf?version=1538798176
-class _triton_sparseconv3d(torch.autograd.Function):
+class _triton_sparseconv2d(torch.autograd.Function):
     @staticmethod
     def forward(ctx,                 
-                features: torch.Tensor,
-                indices: torch.Tensor,
-                HW_0, 
-                HW_1, 
-                HW_2,
-                batch_size,
-                weight: torch.Tensor,
-                bias: torch.Tensor = None,
-                stride: tuple = (1, 1),
-                padding: tuple = (0, 0),
-                dilation: tuple = (1, 1)):
-        str_0, str_1, str_2 = stride
-        pad_0, pad_1, pad_2 = padding
-        dil_0, dil_1, dil_2 = dilation
+        features: torch.Tensor,
+        indices: torch.Tensor,
+        H,
+        W,
+        batch_size,
+        weight: torch.Tensor,
+        bias: torch.Tensor = None,
+        stride: int = (1, 1),
+        padding: int = (0, 0),
+        dilation: int = (1, 1),
+    ):
+        str_h, str_w = stride
+        pad_h, pad_w = padding
+        dil_h, dil_w = dilation
         num_points = len(features)
         
-        K, RS_0, RS_1, RS_2, C = weight.shape
-
-        PQ_0 = (HW_0 + 2 * pad_0 - dil_0 * (RS_0 - 1) - 1) // str_0 + 1
-        PQ_1 = (HW_1 + 2 * pad_1 - dil_1 * (RS_1 - 1) - 1) // str_1 + 1
-        PQ_2 = (HW_2 + 2 * pad_2 - dil_2 * (RS_2 - 1) - 1) // str_2 + 1
+        K, R, S, C = weight.shape
+        P = (H + 2 * pad_h - dil_h * (R - 1) - 1) // str_h + 1
+        Q = (W + 2 * pad_w - dil_w * (S - 1) - 1) // str_w + 1
 
         out_indices, gather_idx, scatter_idx, indice_num_per_loc = get_indice_pairs(
             indices,
-            HW_0, HW_1, HW_2,
-            PQ_0, PQ_1, PQ_2,
-            RS_0, RS_1, RS_2,
-            str_0, str_1, str_2,
-            pad_0, pad_1, pad_2,
-            dil_0, dil_1, dil_2,
+            H, W,
+            P, Q,
+            R, S,
+            str_h, str_w,
+            pad_h, pad_w,
+            dil_h, dil_w,
         )
 
-        RS = RS_0 * RS_1 * RS_2
         out_num_points = len(out_indices)
         out_features = torch.zeros(out_num_points, K, dtype=features.dtype, device=features.device)
-
+        RS = R * S
         for rs in range(RS):
             if indice_num_per_loc[rs] != 0:
-                rs_0 = rs // (RS_1 * RS_2)
-                rs_1 = (rs % (RS_1 * RS_2)) // RS_2
-                rs_2 = rs % RS_2
-                w = weight[:, rs_0, rs_1, rs_2, :]
+                r = rs // S
+                s = rs % S
+                w = weight[:, r, s, :]
                 idx = gather_idx[rs][gather_idx[rs] != -1]
                 p_in = features[idx]
                 p_out = p_in @ w.t()
@@ -511,23 +459,22 @@ class _triton_sparseconv3d(torch.autograd.Function):
             out_features += bias
 
         ctx.save_for_backward(gather_idx, scatter_idx, indice_num_per_loc, features, weight)
-        ctx.RS_0 = RS_0
-        ctx.RS_1 = RS_1
-        ctx.RS_2 = RS_2
+        ctx.R = R
+        ctx.S = S
 
         if bias is None:
             ctx.bias_requires_grad = False
         else:
             ctx.bias_requires_grad = bias.requires_grad
         
-        return out_features, out_indices, PQ_0, PQ_1, PQ_2
+        return out_features, out_indices, P, Q
     
     @staticmethod
     def backward(ctx, dout_features: torch.Tensor, *args):
+        # print(f'---: dout_features: {dout_features}')
         fwd_gather_idx, fwd_scatter_idx, indice_num_per_loc, features, weight = ctx.saved_tensors
-        RS_0 = ctx.RS_0
-        RS_1 = ctx.RS_1
-        RS_2 = ctx.RS_2
+        R = ctx.R
+        S = ctx.S
 
         dfeatures = None
         if features.requires_grad:
@@ -535,14 +482,12 @@ class _triton_sparseconv3d(torch.autograd.Function):
             gather_idx = fwd_scatter_idx
             scatter_idx = fwd_gather_idx
 
-            RS = RS_0 * RS_1 * RS_2
+            RS = R * S
             for rs in range(RS):
                 if indice_num_per_loc[rs] != 0:
-                    rs_0 = rs // (RS_1 * RS_2)
-                    rs_1 = (rs % (RS_1 * RS_2)) // RS_2
-                    rs_2 = rs % RS_2
-
-                    w = weight[:, rs_0, rs_1, rs_2, :]
+                    r = rs // S
+                    s = rs % S
+                    w = weight[:, r, s, :]
                     idx = gather_idx[rs][gather_idx[rs] != -1]
                     p_dout = dout_features[idx]
                     p_din = p_dout @ w
@@ -555,23 +500,24 @@ class _triton_sparseconv3d(torch.autograd.Function):
             dout_gather_idx = fwd_scatter_idx
             input_gather_idx = fwd_gather_idx
             
-            RS = RS_0 * RS_1 * RS_2
+            RS = R * S
             for rs in range(RS):
                 if indice_num_per_loc[rs] != 0:
-                    rs_0 = rs // (RS_1 * RS_2)
-                    rs_1 = (rs % (RS_1 * RS_2)) // RS_2
-                    rs_2 = rs % RS_2
                     idx = dout_gather_idx[rs][dout_gather_idx[rs] != -1]
                     p_dout = dout_features[idx]
+
                     idx = input_gather_idx[rs][input_gather_idx[rs] != -1]
                     p_in = features[idx]
-                    dweight[:, rs_0, rs_1, rs_2, :] += p_dout.t() @ p_in
+
+                    r = rs // S
+                    s = rs % S
+                    dweight[:, r, s, :] += p_dout.t() @ p_in
 
         dbias = None
         if ctx.bias_requires_grad:
             dbias = dout_features.sum(dim=0)
         
-        return dfeatures, None, None, None, None, None, dweight, dbias, None, None, None, None
+        return dfeatures, None, None, None, None, dweight, dbias, None, None, None, None
 
 
-triton_sparseconv3d = _triton_sparseconv3d.apply
+triton_sparseconv2d = _triton_sparseconv2d.apply
