@@ -8,6 +8,8 @@ triton ops
 
 [convolution](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/convolution.md)
 
+[flip](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/flip.md)
+
 [linear](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/linear.md)
 
 [matmul](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/matmul.md)
