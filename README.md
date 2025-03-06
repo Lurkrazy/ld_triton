@@ -14,6 +14,8 @@ triton ops
 
 [matmul](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/matmul.md)
 
+[max](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/max.md)
+
 [mse](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/mse.md)
 
 [rmsnorm](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/rmsnorm.md)
