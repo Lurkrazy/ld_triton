@@ -2,7 +2,7 @@
 $x \in R^{MN}$
 
 <p>
-$max(x)_{i} = max({x_{i,0},...,x_{i,n-1}}) = x_{ik}$
+$max(x)_{i} = max({x_{i,0},...,x_{i,n-1}}) = x_{i,k}$
 </p>
 
 # backward
