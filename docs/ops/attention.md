@@ -147,20 +147,20 @@ $={\frac{{\sum_{x}k_{xj}.exp(\sum_{y} q_{iy}k_{xy})}.L_{i}.\sum_{b} (df_{ib}v_{x
 
 $={\sum_{x}\frac{{exp(\sum_{y} q_{iy}k_{xy})}.\sum_{b} (df_{ib}v_{xb}).k_{xj}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{exp(\sum_{y} q_{iy}k_{xy}).exp(\sum_{z}q_{iz}k_{wz}) . \sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}^{2}}}$
 
-$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}.\sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{exp(\sum_{y} q_{iy}k_{xy}).exp(\sum_{z}q_{iz}k_{wz}) . \sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}^{2}}}$
+$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}.\sum_{b} (df_{ib}v_{wb}).k_{wj}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{exp(\sum_{y} q_{iy}k_{xy}).exp(\sum_{z}q_{iz}k_{wz}) . \sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}^{2}}}$
 
-$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}.\sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}}} - \sum_{w}\sum_{x}{\frac{exp(\sum_{y} q_{iy}k_{xy}).exp(\sum_{z}q_{iz}k_{wz}) . \sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}^{2}}}$
+$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}.\sum_{b} (df_{ib}v_{wb}).k_{wj}}{L_{i}}} - \sum_{w}\sum_{x}{\frac{exp(\sum_{y} q_{iy}k_{xy}).exp(\sum_{z}q_{iz}k_{wz}) . \sum_{b} (df_{ib}v_{xb}).k_{wj}}{L_{i}^{2}}}$
 
-$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.\sum_{b} (df_{ib}v_{xb}).k_{wj}} - \sum_{w}\sum_{x}{\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb}). \frac{exp(\sum_{z}q_{iz}k_{wz})}{L_{i}} .k_{wj}}$
+$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.\sum_{b} (df_{ib}v_{wb}).k_{wj}} - \sum_{w}\sum_{x}{\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb}). \frac{exp(\sum_{z}q_{iz}k_{wz})}{L_{i}} .k_{wj}}$
 
-$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.\sum_{b} (df_{ib}v_{xb}).k_{wj}} - \sum_{w}\frac{exp(\sum_{z}q_{iz}k_{wz})}{L_{i}}\sum_{x}{\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb}) .k_{wj}}$
+$={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.\sum_{b} (df_{ib}v_{wb}).k_{wj}} - \sum_{w}\frac{exp(\sum_{z}q_{iz}k_{wz})}{L_{i}}\sum_{x}{\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb}) .k_{wj}}$
 
-$=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{xb}) - \sum_{x}\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb})) .k_{wj}$
+$=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb})) .k_{wj}$
 
 ### 行形式
-$\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{x}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{wj}$
+$\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{wj}$
 
-$\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{x}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{w}$
+$\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{w}$
 
 ## $k$链式法则
 ### 元素形式
