@@ -16,14 +16,22 @@ $O = PV  \in R^{N \times d}$
 ## 元素表示
 $S_{ij} = \sum q_{ix}k_{jx}$
 
+<p>
 $L_{i} = \sum _{j}exp(S_{ij}) = \sum _{j} exp(\sum _{x}q_{ix}k_{jx})$
+</p>
 
+<p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} softmax(S)_{ix}v_{xj} = \sum _{x} \frac{exp(S_{ix})}{L_{i}}v_{xj} = \sum _{x} \frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}}v_{xj}$
+</p>
 
 ## 行表示
+<p>
 $L_{i} = \sum _{j}exp(S_{ij}) = \sum _{j} exp(\sum _{x}q_{ix}k_{jx}) = exp(\sum _{j}q_{i}k_{j}^{T}) $
+</p>
 
+<p>
 $o_{i} = \sum _{x} \frac{exp(q_{i}k_{x}^{T})}{L_{i}}v_{x}$
+</p>
 
 # backward
 ## 求导
@@ -36,7 +44,9 @@ $\frac {\partial \frac{a(x)}{b(x)}}{\partial x} = \frac{\frac{\partial a(x)}{\pa
 
 $\frac {\partial o_{ab}}{\partial q_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}v_{xb}}{\partial q_{ij}}$
+</p>
 
 #### $a \neq i$
 
@@ -66,7 +76,9 @@ $={\frac{{\sum_{x}k_{xj}.exp(\sum_{y} q_{iy}k_{xy})}.L_{i}.v_{xb} - \sum_{x}exp(
 
 $\frac {\partial o_{ab}}{\partial k_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}v_{xb}}{\partial k_{ij}}$
+</p>
 
 $=\sum_{x} \frac {\partial \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}{\partial k_{ij}} . v_{xb} + \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}} . \frac{\partial v_{xb}}{\partial k_{ij}}$
 
@@ -94,7 +106,9 @@ $={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - q_{aj}.{exp(\sum_{z}
 
 $\frac {\partial o_{ab}}{\partial v_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}v_{xb}}{\partial v_{ij}}$
+</p>
 
 # $b \neq j$
 
@@ -104,7 +118,9 @@ $\frac {\partial o_{ab}}{\partial v_{ij}} = 0$
 
 $\frac {\partial o_{ab}}{\partial v_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}v_{xj}}{\partial v_{ij}}$
+</p>
 
 $= \frac{exp(\sum_{y} q_{ay}k_{iy})}{L_{a}}$
 
@@ -113,11 +129,17 @@ $= \frac{exp(\sum_{y} q_{ay}k_{iy})}{L_{a}}$
 ## $q$链式法则
 $\frac {\partial f(attention(q))}{\partial q_{ij}}$
 
+<p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial q_{ij}}$
+</p>
 
+<p>
 $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial q_{ij}}$
+</p>
 
+<p>
 $=\sum_{b} df_{ib} . \frac {\partial attention(q)_{ib}}{\partial q_{ij}}$
+</p>
 
 $=\sum_{b} df_{ib} . {\frac{{\sum_{x}k_{xj}.exp(\sum_{y} q_{iy}k_{xy})}.L_{i}.v_{xb} - \sum_{x}exp(\sum_{y} q_{iy}k_{xy}).\sum_{w}k_{wj}exp(\sum_{z}q_{iz}k_{wz}) . v_{xb}}{L_{i}^{2}}}$
 
@@ -144,9 +166,13 @@ $\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}
 ### 元素形式
 $\frac {\partial f(attention(q))}{\partial k_{ij}}$
 
+<p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+</p>
 
+<p>
 $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+</p>
 
 $=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . v_{xb}}{L_{a}^{2}}}$
 
@@ -169,9 +195,13 @@ $\frac {\partial f(attention(q))}{\partial k_{i}} = \sum_{a} \frac{{exp(q_{a}k_{
 ### 元素形式
 $\frac {\partial f(attention(q))}{\partial v_{ij}}$
 
+<p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial v_{ij}}$
+</p>
 
+<p>
 $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial v_{ij}}$
+</p>
 
 $=\sum_{a} df_{aj} . \frac{exp(\sum_{y} q_{ay}k_{iy})}{L_{a}}$
 
