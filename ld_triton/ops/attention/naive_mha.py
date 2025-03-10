@@ -78,9 +78,9 @@ class _naive_mha(torch.autograd.Function):
         #     for z in range(Z):
         #         for h in range(H):
         #             for i in range(N_CTX):
-        #                 diag = torch.zeros(HEAD_DIM, device=q.device, dtype=q.dtype)
-        #                 diag[i] = torch.sum(sqk[z, h, i, :] * dov[z, h, i, :])
-        #                 dq[z, h, i, :] = torch.matmul(sqk[z, h, i, :] * (dov[z, h, i, :] - diag[i]), k[z, h, :, :]) * sm_scale
+        #                 d = torch.zeros(HEAD_DIM, device=q.device, dtype=q.dtype)
+        #                 d[i] = torch.sum(sqk[z, h, i, :] * dov[z, h, i, :])
+        #                 dq[z, h, i, :] = torch.matmul(sqk[z, h, i, :] * (dov[z, h, i, :] - d[i]), k[z, h, :, :]) * sm_scale
 
         # # matrix-wise 0
         # if q.requires_grad:
@@ -93,8 +93,8 @@ class _naive_mha(torch.autograd.Function):
         #     dq = torch.zeros_like(q)
         #     for z in range(Z):
         #         for h in range(H):
-        #             diag = torch.sum(sqk[z, h, :, :] * dov[z, h, :, :], dim=-1, keepdim=True)
-        #             dq[z, h, :, :] = torch.matmul(sqk[z, h, :, :] * (dov[z, h, :, :] - diag), k[z, h, :, :]) * sm_scale
+        #             d = torch.sum(sqk[z, h, :, :] * dov[z, h, :, :], dim=-1, keepdim=True)
+        #             dq[z, h, :, :] = torch.matmul(sqk[z, h, :, :] * (dov[z, h, :, :] - d), k[z, h, :, :]) * sm_scale
 
         # matrix-wise 1
         if q.requires_grad:
@@ -104,8 +104,8 @@ class _naive_mha(torch.autograd.Function):
             sqk = torch.softmax(qk.float(), dim=-1)
             dov = torch.matmul(do, v_t)
             
-            diag = torch.sum(sqk * dov, dim=-1, keepdim=True)
-            dq = torch.matmul(sqk * (dov - diag), k) * sm_scale
+            d = torch.sum(sqk * dov, dim=-1, keepdim=True)
+            dq = torch.matmul(sqk * (dov - d), k) * sm_scale
 
         dk = None
         # # element-wise
