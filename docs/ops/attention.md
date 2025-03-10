@@ -92,15 +92,15 @@ $=\sum_{x} {\frac{\frac {exp(\sum_{y} q_{ay}k_{xy})}{k_{ij}}.L_{a} - exp(\sum_{y
 
 $=\sum_{x} {\frac{\frac {exp(\sum_{y} q_{ay}k_{xy})}{k_{ij}}.L_{a} - exp(\sum_{y} q_{ay}k_{xy}).\frac{\sum_{w} exp(\sum_{z}q_{az}k_{wz})}{\partial k_{ij}}}{L_{a}^{2}}} . v_{xb}$
 
-$={\frac{\sum_{x} \frac {exp(\sum_{y} q_{ay}k_{xy})}{k_{ij}}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).\frac{\sum_{w} exp(\sum_{z}q_{az}k_{wz})}{\partial k_{ij}} . v_{xb}}{L_{a}^{2}}}$
+$={\frac{\sum_{x} \frac {exp(\sum_{y} q_{ay}k_{iy})}{k_{ij}}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).\frac{\sum_{w} exp(\sum_{z}q_{az}k_{wz})}{\partial k_{ij}} . v_{xb}}{L_{a}^{2}}}$
 
-$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).\frac{\sum_{w} exp(\sum_{z}q_{az}k_{wz})}{\partial k_{ij}} . v_{xb}}{L_{a}^{2}}}$
+$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).\frac{\sum_{w} exp(\sum_{z}q_{az}k_{wz})}{\partial k_{ij}} . v_{xb}}{L_{a}^{2}}}$
 
-$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).\frac{exp(\sum_{z}q_{az}k_{iz})}{\partial k_{ij}} . v_{xb}}{L_{a}^{2}}}$
+$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).\frac{exp(\sum_{z}q_{az}k_{iz})}{\partial k_{ij}} . v_{xb}}{L_{a}^{2}}}$
 
-$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . v_{xb}}{L_{a}^{2}}}$
+$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . v_{xb}}{L_{a}^{2}}}$
 
-$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - q_{aj}.{exp(\sum_{z}q_{az}k_{iz})}.(\sum_{x}exp(\sum_{y} q_{ay}k_{xy}).v_{xb})}{L_{a}^{2}}}$
+$={\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.v_{xb} - q_{aj}.{exp(\sum_{z}q_{az}k_{iz})}.(\sum_{x}exp(\sum_{y} q_{ay}k_{xy}).v_{xb})}{L_{a}^{2}}}$
 
 ## $v$求导
 
@@ -164,7 +164,7 @@ $\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}
 
 ## $k$链式法则
 ### 元素形式
-$\frac {\partial f(attention(q))}{\partial k_{ij}}$
+$\frac {\partial f(attention(k))}{\partial k_{ij}}$
 
 <p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
@@ -174,21 +174,21 @@ $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} 
 $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
 </p>
 
-$=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . v_{xb}}{L_{a}^{2}}}$
+$=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . v_{xb}}{L_{a}^{2}}}$
 
-$=\sum_{a} {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})}.L_{a}.\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . \sum_{b} (df_{ab} . v_{xb})}{L_{a}^{2}}}$
+$=\sum_{a} {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . \sum_{b} (df_{ab} . v_{xb})}{L_{a}^{2}}}$
 
-$=\sum_{a} {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{xy})} .\sum_{b} (df_{ab} .v_{xb})}{L_{a}}} - \sum_{a} {\frac{\sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . \sum_{b} (df_{ab} . v_{xb})}{L_{a}^{2}}}$
+$=\sum_{a} {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})} .\sum_{b} (df_{ab} .v_{xb})}{L_{a}}} - \sum_{a} {\frac{\sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . \sum_{b} (df_{ab} . v_{xb})}{L_{a}^{2}}}$
 
-$=\sum_{a} {\frac{{exp(\sum_{y} q_{ay}k_{xy})}}{L_{a}} .\sum_{b} (df_{ab} .v_{xb}).q_{aj}} - \sum_{a} \frac{exp(\sum_{z}q_{az}k_{iz})}{L_{a}} . \sum_{x}{\frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb}).q_{aj}$
+$=\sum_{a} {\frac{{exp(\sum_{y} q_{ay}k_{iy})}}{L_{a}} .\sum_{b} (df_{ab} .v_{xb}).q_{aj}} - \sum_{a} \frac{exp(\sum_{z}q_{az}k_{iz})}{L_{a}} . \sum_{x}{\frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb}).q_{aj}$
 
-$=\sum_{a} \frac{{exp(\sum_{y} q_{ay}k_{xy})}}{L_{a}} . (\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}{\frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb})) .q_{aj}$
+$=\sum_{a} \frac{{exp(\sum_{y} q_{ay}k_{iy})}}{L_{a}} . (\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}{\frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb})) .q_{aj}$
 
 ### 行形式
 
-$\frac {\partial f(attention(q))}{\partial k_{ij}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{aj}$
+$\frac {\partial f(attention(k))}{\partial k_{ij}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{aj}$
 
-$\frac {\partial f(attention(q))}{\partial k_{i}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{a}$
+$\frac {\partial f(attention(k))}{\partial k_{i}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{a}$
 
 
 ## $v$链式法则
