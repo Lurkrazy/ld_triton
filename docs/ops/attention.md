@@ -157,11 +157,13 @@ $={\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.\sum_{b} (df_{ib}v_{wb}).k
 
 $=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb})) .k_{wj}$
 
+$=\sum_{w} softmax(s_{iw}).(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}softmax(ix) . \sum_{b} (df_{ib}v_{xb})) .k_{wj}$
+
 ### 行形式
-$\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{wj}$
+$\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{wj}=
+\sum_{w}softmax(s_{iw}).(df_{i}v_{w}^{T} - \sum_{x}softmax(ix) .df_{i}v_{x}^T) .k_{wj}$
 
-$\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{w}$
-
+$\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{w}=\sum_{w} softmax(s_{iw}).(df_{i}v_{w}^{T} - \sum_{x}softmax(s_{ix}) .df_{i}v_{x}^T) .k_{w}$
 ### 矩阵形式
 
 <p>
@@ -190,11 +192,13 @@ $=\sum_{a} {\frac{{exp(\sum_{y} q_{ay}k_{iy})}}{L_{a}} .\sum_{b} (df_{ab} .v_{xb
 
 $=\sum_{a} \frac{{exp(\sum_{y} q_{ay}k_{iy})}}{L_{a}} . (\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}{\frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb})) .q_{aj}$
 
+$=\sum_{a} softmax(s_{ai}) . (\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}softmax(s_{ax}).\sum_{b} (df_{ab} . v_{xb})) .q_{aj}$
+
 ### 行形式
 
-$\frac {\partial f(attention(k))}{\partial k_{ij}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{aj}$
+$\frac {\partial f(attention(k))}{\partial k_{ij}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - \sum_{x}{\frac{exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{aj} = \sum_{a} softmax(s_{ai}) . (df_{a}v_{i}^{T} - \sum_{x} softmax(a_{ax}).df_{a}v_{x}^{T}) .q_{aj}$
 
-$\frac {\partial f(attention(k))}{\partial k_{i}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{a}$
+$\frac {\partial f(attention(k))}{\partial k_{i}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - \sum_{x}{\frac{exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{a} = \sum_{a} softmax(s_{ai}) . (df_{a}v_{i}^{T} - \sum_{x}softmax(s_{ax}).df_{a}v_{x}^{T}) .q_{a}$
 
 ### 矩阵形式
 
