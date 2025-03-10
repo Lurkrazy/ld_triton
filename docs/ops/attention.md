@@ -162,6 +162,9 @@ $\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w
 
 $\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{w}$
 
+### 矩阵形式
+$\frac {\partial f(attention(q))}{\partial q} =(softmax(Q@K^{T})* (d_{f}@V^{T} - sum(softmax(Q@K_{T}) * (d_{f}@V^{T}), dim=-1, keepdim=True)))@K$
+
 ## $k$链式法则
 ### 元素形式
 $\frac {\partial f(attention(k))}{\partial k_{ij}}$
@@ -190,6 +193,8 @@ $\frac {\partial f(attention(k))}{\partial k_{ij}} = \sum_{a} \frac{{exp(q_{a}k_
 
 $\frac {\partial f(attention(k))}{\partial k_{i}} = \sum_{a} \frac{{exp(q_{a}k_{i}^{T})}}{L_{a}} . (df_{a}v_{i}^{T} - {\frac{\sum_{x}exp(q_{a}k_{x}^{T})}{L_{a}}}.df_{a}v_{x}^{T}) .q_{a}$
 
+### 矩阵形式
+$\frac {\partial f(attention(k))}{\partial k} = (softmax(Q@K^{T})*(df@V^{T} - sum(softmax(Q@K^{T}) * df@V^{T}, dim=-1, keepdim=True)))^{T}@Q$
 
 ## $v$链式法则
 ### 元素形式
