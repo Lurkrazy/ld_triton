@@ -216,10 +216,7 @@ $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial v_{ij}}
 
 $=\sum_{a} df_{aj} . \frac{exp(\sum_{y} q_{ay}k_{iy})}{L_{a}}$
 
-### 行形式
+$=\sum_{a} df_{aj} . softmax(s_{ai})$
 
-$\frac {\partial f(attention(q))}{\partial v_{ij}} = \sum_{a} df_{aj} . \frac{exp(\sum_{y} q_{a}k_{i}^T)}{L_{a}} = \sum_{a} \frac{exp(\sum_{y} q_{a}k_{i}^T)}{L_{a}}.df_{aj}$
-
-$\frac {\partial f(attention(q))}{\partial v_{i}} = \sum_{a} \frac{exp(\sum_{y} q_{a}k_{i}^T)}{L_{a}}.df_{a}$
-
-
+### 矩阵形式
+$\frac {\partial f(attention(v))}{\partial v} = softmax(QK^T)^{T}df$
