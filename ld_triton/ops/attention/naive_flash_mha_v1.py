@@ -28,13 +28,13 @@ class _naive_mha(torch.autograd.Function):
                         m = M[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
 
                         s = torch.matmul(q, k.t()) * sm_scale                        # [BLOCK_M, BLOCK_N]
-                        m_j, _ = torch.max(s, dim=-1, keepdim=True)                  # [BLOCK_M, 1]
-                        p = torch.exp(s.float() - m_j).to(q.dtype)                   # [BLOCK_M, BLOCK_N]
-                        l_j = torch.sum(p, dim=-1, keepdim=True)                     # [BLOCK_M, 1]
+                        m_i, _ = torch.max(s, dim=-1, keepdim=True)                  # [BLOCK_M, 1]
+                        p = torch.exp(s.float() - m_i).to(q.dtype)                   # [BLOCK_M, BLOCK_N]
+                        l_i = torch.sum(p, dim=-1, keepdim=True)                     # [BLOCK_M, 1]
 
-                        m_new = torch.max(m, m_j)                                    # [BLOCK_M, 1]
-                        l_new = torch.exp(m - m_new) * l + torch.exp(m_j - m_new) * l_j # [BLOCK_M, 1]
-                        o = (1.0 / l_new) * (l * torch.exp(m - m_new) * o +  torch.exp(m_j - m_new) * torch.matmul( p, v)) # [BLOCK_M, HEAD_DIM]
+                        m_new = torch.max(m, m_i)                                    # [BLOCK_M, 1]
+                        l_new = torch.exp(m - m_new) * l + torch.exp(m_i - m_new) * l_i # [BLOCK_M, 1]
+                        o = (1.0 / l_new) * (l * torch.exp(m - m_new) * o +  torch.exp(m_i - m_new) * torch.matmul( p, v)) # [BLOCK_M, HEAD_DIM]
 
                         O[z, h, i: i+BLOCK_M] = o        # [BLOCK_M, HEAD_DIM]
                         L[z, h, i: i+BLOCK_M, :] = l_new # [BLOCK_M, 1]
