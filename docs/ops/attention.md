@@ -159,15 +159,31 @@ $=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) -
 
 $=\sum_{w} softmax(s_{iw}).(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}softmax(ix) . \sum_{b} (df_{ib}v_{xb})) .k_{wj}$
 
+
+$=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} v_{xb} df_{ib}) .k_{wj}$
+
+$=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{b} (\sum_{x}\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}}v_{xb}) df_{ib}) .k_{wj}$
+
 ### 行形式
 $\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{wj}=
 \sum_{w}softmax(s_{iw}).(df_{i}v_{w}^{T} - \sum_{x}softmax(ix) .df_{i}v_{x}^T) .k_{wj}$
 
+$\frac {\partial f(attention(q))}{\partial q_{ij}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{b}attention_{ib}df_{ib}) .k_{wj}=
+\sum_{w}softmax(s_{iw}).(df_{i}v_{w}^{T} - attention_{i}df_{i}^T) .k_{wj}$
+
+
 $\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{exp(q_{i}k_{x}^T)}{L_{i}} .df_{i}v_{x}^T) .k_{w}=\sum_{w} softmax(s_{iw}).(df_{i}v_{w}^{T} - \sum_{x}softmax(s_{ix}) .df_{i}v_{x}^T) .k_{w}$
+
+$\frac {\partial f(attention(q))}{\partial q_{i}} =\sum_{w}\frac{{exp(q_{i}k_{w}^T)}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{b}attention_{ib}df_{ib}) .k_{w}=\sum_{w} softmax(s_{iw}).(v_{w}df_{i}^{T} - attention_{i}df_{i}^T) .k_{w}$
+
 ### 矩阵形式
 
 <p>
 $\frac {\partial f(attention(q))}{\partial q} =(softmax(QK^{T})* (d_{f}V^{T} - sum(softmax(QK^{T}) * (d_{f}V^{T}), dim=-1, keepdim=True)))K$
+</p>
+
+<p>
+$\frac {\partial f(attention(q))}{\partial q} = (softmax(QK^{T})* (d_{f}V^{T} - sum(attention.d_{f}, dim=-1, keepdim=True)))K$
 </p>
 
 ## $k$链式法则
