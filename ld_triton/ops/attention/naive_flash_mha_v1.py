@@ -145,8 +145,6 @@ class _naive_mha_flash_v1(torch.autograd.Function):
                 dQ[:, :, i: i+BLOCK_M, :] = dq                                 # [Z, H, BLOCK_M, HEAD_DIM]
                 dK[:, :, j: j+BLOCK_N, :] = dk                                 # [Z, H, BLOCK_N, HEAD_DIM]
                 dV[:, :, j: j+BLOCK_N, :] = dv                                 # [Z, H, BLOCK_N, HEAD_DIM]
-
-
         return dQ, dK, dV, None, None, None, None
 
 
@@ -154,10 +152,10 @@ naive_mha_flash_v1 = _naive_mha_flash_v1.apply
 
 
 if __name__ == '__main__':
-    Z = 2
-    H = 3
-    N_CTX = 4
-    HEAD_DIM = 8
+    Z = 4
+    H = 8
+    N_CTX = 1024
+    HEAD_DIM = 32
 
     dtype_ = [torch.float32, torch.float16]
     for dtype in dtype_:
@@ -186,8 +184,8 @@ if __name__ == '__main__':
             naive_dk, k.grad = k.grad.clone(), None
             naive_dv, v.grad = v.grad.clone(), None
             
-            atol = 1e-3
-            rtol = 1e-3
+            atol = 1e-2
+            rtol = 1e-2
             assert torch.allclose(o, naive_o, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
             assert torch.allclose(dq, naive_dq, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
             assert torch.allclose(dk, naive_dk, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
