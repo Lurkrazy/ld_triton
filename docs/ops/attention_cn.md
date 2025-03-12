@@ -18,17 +18,24 @@ $O = PV  \in R^{N \times d}$
 ## 元素表示
 $S_{ij} = \sum_{x} q_{ix}k_{jx}r_{ij}$
 
+<p>
 $L_{i} = \sum _{j}e^{S_{ij}r_{ij}} = \sum _{j} e^{\sum _{x}q_{ix}k_{jx}r_{ij}}$
+</p>
 
 $p_{ij}=\frac{e^{\sum_{x} q_{ix}k_{jx}r_{ij}}}{L_{i}}$
 
+<p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} softmax(S*R)_{ix}v_{xj} = \sum _{x} \frac{e^{S_{ix}r_{ix}}}{L_{i}}v_{xj} = \sum _{x} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}}v_{xj}$
-
+</p>
 
 ## 行表示
+<p>
 $L_{i} = \sum _{j}e^{S_{ij}r_{ij}} = \sum _{j} e^{\sum _{x}q_{ix}k_{jx}r_{ij}} = e^{q_{i}k_{j}^{T}r_{ij}} $
+</p>
 
+<p>
 $o_{i} = \sum _{x} \frac{e^{q_{i}k_{x}^{T}r_{ix}}}{L_{i}}v_{x}$
+</p>
 
 # backward
 ## 求导
@@ -41,7 +48,9 @@ $\frac {\partial \frac{a(x)}{b(x)}}{\partial x} = \frac{\frac{\partial a(x)}{\pa
 
 $\frac {\partial o_{ab}}{\partial q_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}v_{xb}}{\partial q_{ij}}$
+</p>
 
 #### $a \neq i$
 
@@ -71,7 +80,9 @@ $={\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.v_{xb} - \
 
 $\frac {\partial o_{ab}}{\partial k_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}v_{xb}}{\partial k_{ij}}$
+</p>
 
 $=\sum_{x} \frac {\partial \frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}{\partial k_{ij}} . v_{xb} + \frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}} . \frac{\partial v_{xb}}{\partial k_{ij}}$
 
@@ -97,7 +108,9 @@ $={\frac{{q_{aj}r_{ax}.e^{\sum_{y} q_{ay}k_{iy}r_{ax}}}.L_{a}.v_{xb} - q_{aj}.{e
 
 $\frac {\partial o_{ab}}{\partial v_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}v_{xb}}{\partial v_{ij}}$
+</p>
 
 # $b \neq j$
 
@@ -107,7 +120,9 @@ $\frac {\partial o_{ab}}{\partial v_{ij}} = 0$
 
 $\frac {\partial o_{ab}}{\partial v_{ij}}$
 
+<p>
 $=\frac {\sum _{x} \frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}v_{xj}}{\partial v_{ij}}$
+</p>
 
 $= \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 
@@ -116,12 +131,17 @@ $= \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 ## $q$链式法则
 $\frac {\partial f(attention(q))}{\partial q_{ij}}$
 
-
+<p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial q_{ij}}$
+</p>
 
+<p>
 $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial q_{ij}}$
+</p>
 
+<p>
 $=\sum_{b} df_{ib} . \frac {\partial attention(q)_{ib}}{\partial q_{ij}}$
+</p>
 
 $=\sum_{b} df_{ib} . {\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.v_{xb} - \sum_{x}e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.\sum_{w}k_{wj}r_{iw}e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . v_{xb}}{L_{i}^{2}}}$
 
@@ -194,12 +214,18 @@ $dP=dfV^{T}$
 #### 变形一
 $\frac {\partial f(attention(q))}{\partial q}$
 
+<p>
 $=((softmax(QK^{T}*R)* (dfV^{T} - sum(softmax(QK^{T}*R) * (dfV^{T}), dim=-1, keepdim=True)))*R)K$
+</p>
 
 $=(P * (dfV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
 
 #### 变形二
-$\frac {\partial f(attention(q))}{\partial q} = (softmax(QK^{T}*R)* (dfV^{T} - sum(O.df, dim=-1, keepdim=True))*R)K$
+$\frac {\partial f(attention(q))}{\partial q}$
+
+<p>
+$= (softmax(QK^{T}*R)* (dfV^{T} - sum(O.df, dim=-1, keepdim=True))*R)K$
+</p>
 
 $= (P* (dP - sum(O.df, dim=-1, keepdim=True))*R)K$
 
@@ -207,9 +233,13 @@ $= (P* (dP - sum(O.df, dim=-1, keepdim=True))*R)K$
 ### 元素形式
 $\frac {\partial f(attention(k))}{\partial k_{ij}}$
 
+<p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+</p>
 
+<p>
 $=\sum_{a}\sum_{b} df_{ab}  \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+</p>
 
 $=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}.L_{a}.v_{xb} - \sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}r_{ai}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . v_{xb}}{L_{a}^{2}}}$
 
@@ -264,13 +294,13 @@ $= (P*(dP - sum(O * df, dim=-1, keepdim=True))*R)^{T}Q$
 ### 元素形式
 $\frac {\partial f(attention(v))}{\partial v_{ij}}$
 
-
+<p>
 $=\sum_{a}\sum_{b} \frac {\partial f(attention(v))}{\partial attention(v)_{ab}} . \frac {\partial attention(v)_{ab}}{\partial v_{ij}}$
+</p>
 
-
-
+<p>
 $=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(v)_{ab}}{\partial v_{ij}}$
-
+</p>
 
 $=\sum_{a} df_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 
