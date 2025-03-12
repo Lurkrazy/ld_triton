@@ -4,7 +4,7 @@ flashattentionv2 的理论推导有一些错误,重新推导了一遍。
 
 $O^{(2)} = diag(l^{(2)}/(l^{(1)} * e^{m_{2}-m_{1}}))^{-1}O^{(1)} + \bar P^{(2)}V^{(2)}$
 
-第5页，$O^{(2)}$ 的说法也是错误的
+第5页, $O^{(2)}$ 的说法也是错误的
 
 # forward
 
@@ -23,9 +23,13 @@ $O = PV  \in R^{N \times d}$
 
 $S_{ij} = \sum q_{ix}k_{jx}$
 
+<p>
 $L_{i} = \sum _{j}exp(S_{ij}) = \sum _{j} exp(\sum _{x}q_{ix}k_{jx})$
+</p>
 
+<p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} \frac{exp(S_{ix})}{L_{i}}v_{xj} = \sum _{x} \frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}}v_{xj}$
+</p>
 
 ## attention实现形式
 
@@ -33,9 +37,13 @@ $S_{ij} = \sum q_{ix}k_{jx}$
 
 $M_{i} = max(\sum_{x} q_{ix}k_{0x}, \sum_{x} q_{ix}k_{1x}, ......, \sum_{x} q_{ix}k_{Nx})$
 
+<p>
 $L_{i} = \sum _{j}exp(S_{ij}) = \sum _{j} exp(\sum _{x}q_{ix}k_{jx}-M_{i})$
+</p>
 
+<p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} \frac{exp(S_{ix}-M_{i})}{L_{i}}v_{xj} = \sum _{x} \frac{exp(\sum_{y} q_{iy}k_{xy}-M_{i})}{L_{i}}v_{xj}$
+</p>
 
 ## flash形式
 
@@ -43,45 +51,73 @@ $S_{ij} = \sum q_{ix}k_{jx}$
 
 $M_{i,(a,b)} = max(\sum_{x} q_{ix}k_{ax}, \sum_{x} q_{ix}k_{a+1,x}, ......, \sum_{x} q_{ix}k_{b,x})$
 
+<p>
 $L_{i,(a,b)} = \sum _{j=a}^{b}e^{S_{ij}} = \sum _{j=a}^{b} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(a,b)}}$
+</p>
 
 $M_{i,(0,n-1)} = max(\sum_{x} q_{ix}k_{0x}, \sum_{x} q_{ix}k_{1,x}, ......, \sum_{x} q_{ix}k_{n-1,x})$
 
+<p>
 $L_{i,(0,n-1)} = \sum _{j=0}^{n-1}e^{S_{ij}} = \sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n-1)}}$
+</p>
 
 $P_{i,x,(a,b)}=\frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(a,b)}}}{L_{i,(a,b)}}$
 
+<p>
 $O_{i,j,n-1} = \sum _{x=0}^{n-1} \frac{e^{S_{ix}-M_{i,(0,n-1)}}}{L_{i,(0,n-1)}}v_{xj} = \sum _{x=0}^{n-1} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n-1)}}}{L_{i,(0,n-1)}}v_{xj}$
+</p>
 
 $M_{i,(0,n+m)} = max(\sum_{x} q_{ix}k_{0x}, \sum_{x} q_{ix}k_{1x}, ......, \sum_{x} q_{ix}k_{n+m,x}) = max(M_{i,(0,n-1)}, M_{i, (n, n+m)})$
 
+<p>
 $L_{i,(0,n+m)} = \sum _{j=0}^{n+m}e^{S_{ij}}$
+</p>
 
+<p>
 $= \sum _{j=0}^{n+m} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $= \sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n+m)}} + \sum _{j=n}^{n+m}e^{\sum _{x}q_{ix}k_{j,x}-M_{i,(0,n+m)}} $
+</p>
 
+<p>
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}\sum _{j=0}^{n-1}e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n-1)}} + \sum _{j=n}^{n+m}e^{\sum _{x}q_{ix}k_{j,x}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}\sum _{j=0}^{n-1}e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n)}} + e^{M_{i, (n,n+m)} - M_{i, (0,n+m)}}\sum _{j=n}^{n+m}e^{\sum _{x}q_{ix}k_{j,x}-M_{i,(n,n+m)}}$
+</p>
 
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}L_{i,(0,n-1)} + e^{M_{i, (n,n+m)} - M_{i, (0,n+m)}}L_{i,(n,n+m)}$
 
-$O_{i,j,n+m}$
+<p>
+$O_{i,j,n+m}= \sum _{x=0}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
+</p>
 
-$= \sum _{x=0}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
-
+<p>
 $= \sum _{x=0}^{n-1} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj} + \sum _{x=n}^{n+m}\frac{e^{\sum_{y} q_{iy}k_{x,y}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{x,j}$
+</p>
 
+<p>
 $= \sum _{x=0}^{n-1} \frac{L_{i,(0,n-1)}}{L_{i,(0,n+m)}} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}}v_{xj} + \sum _{x=n}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \sum _{x=0}^{n-1} \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n-1)}}}{L_{i,(0,n-1)}}v_{xj} + \sum _{x=n}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \sum _{x=n}^{n+m} \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}\frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(n,n+m)}}}{L_{i,(n,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \sum _{x=n}^{n+m} \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}P_{i,x,(n,n+m)}v_{xj}$
+</p>
 
+<p>
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}\sum _{x=n}^{n+m} P_{i,x,(n,n+m)}v_{xj}$
+</p>
 
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}P_{i,(n,n+m)}v_{j}^{T}$
 
@@ -94,7 +130,10 @@ $O_{i,j,N-1} = O_{i,j}$
 $\frac {\partial f(attention(q))}{\partial q} =(softmax(QK^{T})* (d_{f}V^{T} - sum(softmax(QK^{T}) * (d_{f}V^{T}), dim=-1, keepdim=True)))K$
 
 ### 元素形式
+
+<p>
 $L_{i} = \sum _{j}exp(S_{ij}) = \sum _{j} exp(\sum _{x}q_{ix}k_{jx})$
+</p>
 
 $\frac {\partial f(attention(q))}{\partial q_{ij}}=\sum_{w}\frac{{exp(\sum_{y} q_{iy}k_{wy})}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}\frac{exp(\sum_{y} q_{iy}k_{xy})}{L_{i}} . \sum_{b} (df_{ib}v_{xb})) .k_{wj}$
 
@@ -103,7 +142,9 @@ $\frac {\partial f(attention(k))}{\partial k_{ij}}=\sum_{a} \frac{{exp(\sum_{y} 
 ### 实现形式
 $M_{i} = max(\sum_{x} q_{ix}k_{0x}, \sum_{x} q_{ix}k_{1x}, ......, \sum_{x} q_{ix}k_{Nx})$
 
+<p>
 $L_{i} = \sum _{j} e^{\sum _{x}q_{ix}k_{jx}-M_{i}}$
+</p>
 
 $P_{ij} = \frac{{e^{\sum_{y} q_{iy}k_{wy}-M_{i}}}}{L_{i}}$
 
@@ -123,7 +164,9 @@ $=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}-M_{i}}}}{L_{i}}.(dP_{iw} - D_{i}).k_{w
 ### flash形式
 $M_{i,(c,d)} = max(\sum_{x} q_{ix}k_{cx}, ......, \sum_{x} q_{ix}k_{d,x})$
 
+<p>
 $L_{i,(c,d)} = \sum _{j=c}^{d} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(c,d)}}$
+</p>
 
 $P_{i,j,(c,d)} = \frac{{e^{\sum_{y} q_{iy}k_{wy}-M_{i,(c,d)}}}}{L_{i,(c,d)}}$
 
@@ -133,7 +176,9 @@ $D_{i}=\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i}}}{L_{i}} . \sum_{b} (df_{ib}
 
 $M_{i,(0,n-1)} = max(\sum_{x} q_{ix}k_{0x}, ......, \sum_{x} q_{ix}k_{n-1,x})$
 
+<p>
 $L_{i,(0,n-1)} = \sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n-1)}}$
+</p>
 
 $P_{i,j,(0,n-1)} = \frac{{e^{\sum_{y} q_{iy}k_{wy}-M_{i,(0,n-1)}}}}{L_{i,(0,n-1)}}$
 
@@ -147,11 +192,17 @@ $M_{i,(0,n+m)} = max(\sum_{x} q_{ix}k_{0x}, \sum_{x} q_{ix}k_{1x}, ......, \sum_
 
 $=max(M_{i,(0,n-1)}, M_{i,(n,n+m)})$
 
+<p>
 $L_{i,(0,n+m)} = \sum _{j=0}^{n+m} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $=\sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n+m)}}+\sum _{j=n}^{n+m} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $=e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}\sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n-1)}}+\sum _{j=n}^{n+m} e^{\sum _{x}q_{ix}k_{jx}-M_{i,(0,n+m)}}$
+</p>
 
 $=e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}L_{i,(0,n-1)} + e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}L_{i,(n,n+m)}$
 
