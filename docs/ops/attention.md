@@ -52,7 +52,7 @@ $=\frac {\sum _{x} \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}v_{xb}}{\partial q_{i
 
 $\frac {\partial o_{ab}}{\partial q_{ij}} = 0$
 
-### $ a = i$
+### $a = i$
 
 $=\sum_{x} \frac {\partial \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}}}{\partial q_{ij}} . v_{xb} + \frac{exp(\sum_{y} q_{ay}k_{xy})}{L_{a}} . \frac{\partial v_{xb}}{\partial q_{ij}}$
 
