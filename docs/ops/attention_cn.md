@@ -200,25 +200,25 @@ $=\sum_{w} p_{iw}.(do_{i}v_{w}^{T} - o_{i}do_{i}^T)r_{iw}.k_{w}$
 
 $P=softmax(QK^{T}*R)$
 
-$dP=doV^{T}$
+$dP=dOV^{T}$
 
 #### 变形一
 $\frac {\partial f(o(q))}{\partial q}$
 
 <p>
-$=((softmax(QK^{T}*R)* (doV^{T} - sum(softmax(QK^{T}*R) * (doV^{T}), dim=-1, keepdim=True)))*R)K$
+$=((softmax(QK^{T}*R)* (dOV^{T} - sum(softmax(QK^{T}*R) * (dOV^{T}), dim=-1, keepdim=True)))*R)K$
 </p>
 
-$=(P * (doV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
+$=(P * (dOV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
 
 #### 变形二
 $\frac {\partial f(o(q))}{\partial q}$
 
 <p>
-$= (softmax(QK^{T}*R)* (doV^{T} - sum(O.do, dim=-1, keepdim=True))*R)K$
+$= (softmax(QK^{T}*R)* (dOV^{T} - sum(O.dO, dim=-1, keepdim=True))*R)K$
 </p>
 
-$= (P* (dP - sum(O.do, dim=-1, keepdim=True))*R)K$
+$= (P* (dP - sum(O.dO, dim=-1, keepdim=True))*R)K$
 
 ## $k$链式法则
 ### 元素形式
@@ -279,7 +279,7 @@ $= (P*(dP - sum(P * dP, dim=-1, keepdim=True))*R)^{T}Q$
 
 $\frac {\partial f(o(k))}{\partial k}$
 
-$= (P*(dP - sum(O * do, dim=-1, keepdim=True))*R)^{T}Q$
+$= (P*(dP - sum(O * dO, dim=-1, keepdim=True))*R)^{T}Q$
 
 ## $v$链式法则
 ### 元素形式
@@ -298,4 +298,4 @@ $=\sum_{a} do_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 $=\sum_{a} do_{aj} . p_{ai}$
 
 ### 矩阵形式
-$\frac {\partial f(o(v))}{\partial v} = softmax(QK^T*R)^{T}do=P^Tdo$
+$\frac {\partial f(o(v))}{\partial v} = softmax(QK^T*R)^{T}dO=P^TdO$
