@@ -127,98 +127,98 @@ $=\sum_{a}\sum_{b} \frac {\partial f(o(q))}{\partial o(q)_{ab}} . \frac {\partia
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial o(q)_{ab}}{\partial q_{ij}}$
+$=\sum_{a}\sum_{b} do_{ab} . \frac {\partial o(q)_{ab}}{\partial q_{ij}}$
 </p>
 
 <p>
-$=\sum_{b} df_{ib} . \frac {\partial o(q)_{ib}}{\partial q_{ij}}$
+$=\sum_{b} do_{ib} . \frac {\partial o(q)_{ib}}{\partial q_{ij}}$
 </p>
 
-$=\sum_{b} df_{ib} . {\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.v_{xb} - \sum_{x}e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.\sum_{w}k_{wj}r_{iw}e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . v_{xb}}{L_{i}^{2}}}$
+$=\sum_{b} do_{ib} . {\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.v_{xb} - \sum_{x}e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.\sum_{w}k_{wj}r_{iw}e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . v_{xb}}{L_{i}^{2}}}$
 
-$={\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.\sum_{b} (df_{ib}v_{xb}) - \sum_{x}e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.\sum_{w}k_{wj}r_{iw}e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (df_{ib}v_{xb})}{L_{i}^{2}}}$
+$={\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.\sum_{b} (do_{ib}v_{xb}) - \sum_{x}e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.\sum_{w}k_{wj}r_{iw}e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (do_{ib}v_{xb})}{L_{i}^{2}}}$
 
-$={\sum_{x}\frac{{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.\sum_{b} (df_{ib}v_{xb}).k_{xj}r_{ix}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (df_{ib}v_{xb}).k_{wj}r_{iw}}{L_{i}^{2}}}$
+$={\sum_{x}\frac{{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.\sum_{b} (do_{ib}v_{xb}).k_{xj}r_{ix}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (do_{ib}v_{xb}).k_{wj}r_{iw}}{L_{i}^{2}}}$
 
-$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}.\sum_{b} (df_{ib}v_{wb}).k_{wj}r_{iw}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (df_{ib}v_{xb}).k_{wj}r_{iw}}{L_{i}^{2}}}$
+$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}.\sum_{b} (do_{ib}v_{wb}).k_{wj}r_{iw}}{L_{i}}} - \sum_{x}\sum_{w}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (do_{ib}v_{xb}).k_{wj}r_{iw}}{L_{i}^{2}}}$
 
-$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}.\sum_{b} (df_{ib}v_{wb}).k_{wj}r_{iw}}{L_{i}}} - \sum_{w}\sum_{x}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (df_{ib}v_{xb}).k_{wj}r_{iw}}{L_{i}^{2}}}$
+$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}.\sum_{b} (do_{ib}v_{wb}).k_{wj}r_{iw}}{L_{i}}} - \sum_{w}\sum_{x}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . \sum_{b} (do_{ib}v_{xb}).k_{wj}r_{iw}}{L_{i}^{2}}}$
 
-$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.\sum_{b} (df_{ib}v_{wb}).k_{wj}r_{iw}} - \sum_{w}\sum_{x}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} (df_{ib}v_{xb}). \frac{e^{\sum_{z}q_{iz}k_{wz}r_{iw}}}{L_{i}} .k_{wj}}r_{iw}$
+$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.\sum_{b} (do_{ib}v_{wb}).k_{wj}r_{iw}} - \sum_{w}\sum_{x}{\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} (do_{ib}v_{xb}). \frac{e^{\sum_{z}q_{iz}k_{wz}r_{iw}}}{L_{i}} .k_{wj}}r_{iw}$
 
-$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.\sum_{b} (df_{ib}v_{wb}).k_{wj}r_{iw}} - \sum_{w}\frac{e^{\sum_{z}q_{iz}k_{wz}r_{iw}}}{L_{i}} \sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} (df_{ib}v_{xb}) .k_{wj}r_{iw}$
+$={\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.\sum_{b} (do_{ib}v_{wb}).k_{wj}r_{iw}} - \sum_{w}\frac{e^{\sum_{z}q_{iz}k_{wz}r_{iw}}}{L_{i}} \sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} (do_{ib}v_{xb}) .k_{wj}r_{iw}$
 
-$=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} (df_{ib}v_{xb})) .k_{wj}r_{iw}$
+$=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.(\sum_{b} (do_{ib}v_{wb}) - \sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} (do_{ib}v_{xb})) .k_{wj}r_{iw}$
 
 #### 变形一
-$=\sum_{w} p_{iw}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}p_{ix} . \sum_{b} (df_{ib}v_{xb})) .k_{wj}r_{iw}$
+$=\sum_{w} p_{iw}.(\sum_{b} (do_{ib}v_{wb}) - \sum_{x}p_{ix} . \sum_{b} (do_{ib}v_{xb})) .k_{wj}r_{iw}$
 
 #### 变形二
-$=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{x}\frac{e_{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} v_{xb} df_{ib}) .k_{wj}r_{iw}$
+$=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.(\sum_{b} (do_{ib}v_{wb}) - \sum_{x}\frac{e_{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}} . \sum_{b} v_{xb} do_{ib}) .k_{wj}r_{iw}$
 
-$=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.(\sum_{b} (df_{ib}v_{wb}) - \sum_{b} (\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}}v_{xb}) df_{ib}) .k_{wj}r_{iw}$
+$=\sum_{w}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}}}}{L_{i}}.(\sum_{b} (do_{ib}v_{wb}) - \sum_{b} (\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}}v_{xb}) do_{ib}) .k_{wj}r_{iw}$
 
-$=\sum_{w}p_{iw}.(\sum_{b}df_{ib}v_{wb} - \sum_{b}o_{ib} df_{ib}) .k_{wj}r_{iw}$
+$=\sum_{w}p_{iw}.(\sum_{b}do_{ib}v_{wb} - \sum_{b}o_{ib} do_{ib}) .k_{wj}r_{iw}$
 
 ### 行形式
 #### 变形一
-$dp_{ij} = \sum_{x}df_{ix}v_{jx} = df_{i}v_{j}^T$
+$dp_{ij} = \sum_{x}do_{ix}v_{jx} = do_{i}v_{j}^T$
 
 $\frac {\partial f(o(q))}{\partial q_{ij}}$
 
-$=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{e^{q_{i}k_{x}^T r_{ix}}}{L_{i}} .df_{i}v_{x}^T) .k_{wj}r_{iw}$
+$=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(do_{i}v_{w}^{T} - \sum_{x}\frac{e^{q_{i}k_{x}^T r_{ix}}}{L_{i}} .do_{i}v_{x}^T) .k_{wj}r_{iw}$
 
-$=\sum_{w}p_{iw}.(df_{i}v_{w}^{T} - \sum_{x}p_{ix} .df_{i}v_{x}^T) .k_{wj}r_{iw}$
+$=\sum_{w}p_{iw}.(do_{i}v_{w}^{T} - \sum_{x}p_{ix} .do_{i}v_{x}^T) .k_{wj}r_{iw}$
 
 $= \sum_{w}p_{iw}.(dp_{iw} - \sum_{x}p_{ix} .dp_{ix}) .k_{wj}r_{iw}$
 
 $\frac {\partial f(o(q))}{\partial q_{i}}$
 
-$=\sum_{w}\frac{{e^{q_{i}k_{w}^T r_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{e^{q_{i}k_{x}^T r_{ix}}}{L_{i}} .df_{i}v_{x}^T)r_{iw}.k_{w}$
+$=\sum_{w}\frac{{e^{q_{i}k_{w}^T r_{iw}}}}{L_{i}}.(do_{i}v_{w}^{T} - \sum_{x}\frac{e^{q_{i}k_{x}^T r_{ix}}}{L_{i}} .do_{i}v_{x}^T)r_{iw}.k_{w}$
 
-$=\sum_{w} p_{iw}.(df_{i}v_{w}^{T} - \sum_{x}p_{iw} .df_{i}v_{x}^T)r_{iw}.k_{w}$
+$=\sum_{w} p_{iw}.(do_{i}v_{w}^{T} - \sum_{x}p_{iw} .do_{i}v_{x}^T)r_{iw}.k_{w}$
 
 $=\sum_{w} p_{iw}.(dp_{iw} - \sum_{x}p_{iw} .dp_{ix})r_{iw}.k_{w}$
 
 ### 变形二
 $\frac {\partial f(o(q))}{\partial q_{ij}}$
 
-$=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{b}o_{ib}df_{ib})r_{iw}.k_{wj}$
+$=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(do_{i}v_{w}^{T} - \sum_{b}o_{ib}do_{ib})r_{iw}.k_{wj}$
 
-$=\sum_{w}p_{iw}.(df_{i}v_{w}^{T} - o_idf_{i}^T)r_{iw} .k_{wj}$
+$=\sum_{w}p_{iw}.(do_{i}v_{w}^{T} - o_ido_{i}^T)r_{iw} .k_{wj}$
 
-$=\sum_{w}p_{iw}.(dp_{iw} - o_idf_{i}^T)r_{iw} .k_{wj}$
+$=\sum_{w}p_{iw}.(dp_{iw} - o_ido_{i}^T)r_{iw} .k_{wj}$
 
 $\frac {\partial f(o(q))}{\partial q_{i}}$
 
-$=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{b}o_{ib}df_{ib})r_{iw}.k_{w}$
+$=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(do_{i}v_{w}^{T} - \sum_{b}o_{ib}do_{ib})r_{iw}.k_{w}$
 
-$=\sum_{w} p_{iw}.(df_{i}v_{w}^{T} - o_{i}df_{i}^T)r_{iw}.k_{w}$
+$=\sum_{w} p_{iw}.(do_{i}v_{w}^{T} - o_{i}do_{i}^T)r_{iw}.k_{w}$
 
 ### 矩阵形式
 
 
 $P=softmax(QK^{T}*R)$
 
-$dP=dfV^{T}$
+$dP=doV^{T}$
 
 #### 变形一
 $\frac {\partial f(o(q))}{\partial q}$
 
 <p>
-$=((softmax(QK^{T}*R)* (dfV^{T} - sum(softmax(QK^{T}*R) * (dfV^{T}), dim=-1, keepdim=True)))*R)K$
+$=((softmax(QK^{T}*R)* (doV^{T} - sum(softmax(QK^{T}*R) * (doV^{T}), dim=-1, keepdim=True)))*R)K$
 </p>
 
-$=(P * (dfV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
+$=(P * (doV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
 
 #### 变形二
 $\frac {\partial f(o(q))}{\partial q}$
 
 <p>
-$= (softmax(QK^{T}*R)* (dfV^{T} - sum(O.df, dim=-1, keepdim=True))*R)K$
+$= (softmax(QK^{T}*R)* (doV^{T} - sum(O.do, dim=-1, keepdim=True))*R)K$
 </p>
 
-$= (P* (dP - sum(O.df, dim=-1, keepdim=True))*R)K$
+$= (P* (dP - sum(O.do, dim=-1, keepdim=True))*R)K$
 
 ## $k$链式法则
 ### 元素形式
@@ -229,32 +229,32 @@ $=\sum_{a}\sum_{b} \frac {\partial f(o(q))}{\partial o(q)_{ab}} . \frac {\partia
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab}  \frac {\partial o(q)_{ab}}{\partial k_{ij}}$
+$=\sum_{a}\sum_{b} do_{ab}  \frac {\partial o(q)_{ab}}{\partial k_{ij}}$
 </p>
 
-$=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}.L_{a}.v_{xb} - \sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}r_{ai}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . v_{xb}}{L_{a}^{2}}}$
+$=\sum_{a}\sum_{b} do_{ab} . {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}.L_{a}.v_{xb} - \sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}r_{ai}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . v_{xb}}{L_{a}^{2}}}$
 
-$=\sum_{a} {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}.L_{a}.\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . \sum_{b} (df_{ab} . v_{xb})}{L_{a}^{2}}}$
+$=\sum_{a} {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}.L_{a}.\sum_{b} (do_{ab} .v_{xb}) - \sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . \sum_{b} (do_{ab} . v_{xb})}{L_{a}^{2}}}$
 
-$=\sum_{a} {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}} .\sum_{b} (df_{ab} .v_{xb})}{L_{a}}} - \sum_{a} {\frac{\sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}r_{ai}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . \sum_{b} (df_{ab} . v_{xb})}{L_{a}^{2}}}$
+$=\sum_{a} {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}} .\sum_{b} (do_{ab} .v_{xb})}{L_{a}}} - \sum_{a} {\frac{\sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}r_{ai}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . \sum_{b} (do_{ab} . v_{xb})}{L_{a}^{2}}}$
 
-$=\sum_{a} {\frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} .\sum_{b} (df_{ab} .v_{xb}).q_{aj}r_{ai}} - \sum_{a} \frac{e^{\sum_{z}q_{az}k_{iz}r_{ai}}}{L_{a}} . \sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb}).q_{aj}r_{ai}$
+$=\sum_{a} {\frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} .\sum_{b} (do_{ab} .v_{xb}).q_{aj}r_{ai}} - \sum_{a} \frac{e^{\sum_{z}q_{az}k_{iz}r_{ai}}}{L_{a}} . \sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}.\sum_{b} (do_{ab} . v_{xb}).q_{aj}r_{ai}$
 
 #### 变形一
-$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b} (df_{ab} .v_{xb}) - \sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}.\sum_{b} (df_{ab} . v_{xb})) .q_{aj}r_{ai}$
+$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b} (do_{ab} .v_{xb}) - \sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}.\sum_{b} (do_{ab} . v_{xb})) .q_{aj}r_{ai}$
 
 #### 变形二
-$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b} df_{ab} .v_{xb} - \sum_{b}\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb}df_{ab}) .q_{aj}r_{ai}$
+$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b} do_{ab} .v_{xb} - \sum_{b}\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb}do_{ab}) .q_{aj}r_{ai}$
 
-$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b}df_{ab} .v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb})df_{ab}) .q_{aj}r_{ai}$
+$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b}do_{ab} .v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb})do_{ab}) .q_{aj}r_{ai}$
 
 ### 行形式
 #### 变形一
 $\frac {\partial f(o(k))}{\partial k_{ij}}$
 
-$= \sum_{a} \frac{{e^{q_{a}k_{i}^{T}r_{ai}}}}{L_{a}} . (df_{a}v_{i}^{T} - \sum_{x}{\frac{e^{q_{a}k_{x}^{T}r_{ax}}}{L_{a}}}.df_{a}v_{x}^{T})r_{ai} .q_{aj}$
+$= \sum_{a} \frac{{e^{q_{a}k_{i}^{T}r_{ai}}}}{L_{a}} . (do_{a}v_{i}^{T} - \sum_{x}{\frac{e^{q_{a}k_{x}^{T}r_{ax}}}{L_{a}}}.do_{a}v_{x}^{T})r_{ai} .q_{aj}$
 
-$= \sum_{a} p_{ai} . (df_{a}v_{i}^{T} - \sum_{x} p_{ax}.df_{a}v_{x}^{T})r_{ai} .q_{aj}$
+$= \sum_{a} p_{ai} . (do_{a}v_{i}^{T} - \sum_{x} p_{ax}.do_{a}v_{x}^{T})r_{ai} .q_{aj}$
 
 $= \sum_{a} p_{ai} . (dp_{ai} - \sum_{x} p_{ax}.dp_{ax})r_{ai} .q_{aj}$
 
@@ -265,9 +265,9 @@ $= \sum_{a} p_{ai} . (dp_{ai} - \sum_{x} p_{ax}.dp_{ax})r_{ai} .q_{a}$
 #### 变形二
 $\frac {\partial f(o(k))}{\partial k_{ij}}$
 
-$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b}df_{ab} .v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb})df_{ab})r_{ai} .q_{aj}$
+$=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b}do_{ab} .v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb})do_{ab})r_{ai} .q_{aj}$
 
-$=\sum_{a} p_{ai}. (dp_{ax} - \sum_{b}o_{ab}df_{ab})r_{ai} .q_{aj}$
+$=\sum_{a} p_{ai}. (dp_{ax} - \sum_{b}o_{ab}do_{ab})r_{ai} .q_{aj}$
 
 ### 矩阵形式
 #### 变形一
@@ -279,7 +279,7 @@ $= (P*(dP - sum(P * dP, dim=-1, keepdim=True))*R)^{T}Q$
 
 $\frac {\partial f(o(k))}{\partial k}$
 
-$= (P*(dP - sum(O * df, dim=-1, keepdim=True))*R)^{T}Q$
+$= (P*(dP - sum(O * do, dim=-1, keepdim=True))*R)^{T}Q$
 
 ## $v$链式法则
 ### 元素形式
@@ -290,12 +290,12 @@ $=\sum_{a}\sum_{b} \frac {\partial f(o(v))}{\partial o(v)_{ab}} . \frac {\partia
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial o(v)_{ab}}{\partial v_{ij}}$
+$=\sum_{a}\sum_{b} do_{ab} . \frac {\partial o(v)_{ab}}{\partial v_{ij}}$
 </p>
 
-$=\sum_{a} df_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
+$=\sum_{a} do_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 
-$=\sum_{a} df_{aj} . p_{ai}$
+$=\sum_{a} do_{aj} . p_{ai}$
 
 ### 矩阵形式
-$\frac {\partial f(o(v))}{\partial v} = softmax(QK^T*R)^{T}df=P^Tdf$
+$\frac {\partial f(o(v))}{\partial v} = softmax(QK^T*R)^{T}do=P^Tdo$
