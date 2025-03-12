@@ -1,6 +1,6 @@
 
 # forward
-flashattention中，好像是使用列表示进行推到，与torch表示不符，令人困惑，本文使用行表示推导
+flasho中，好像是使用列表示进行推到，与torch表示不符，令人困惑，本文使用行表示推导
 
 ## 矩阵表示
 $Q, K, V \in R^{N \times d}$
@@ -26,15 +26,6 @@ $p_{ij}=\frac{e^{\sum_{x} q_{ix}k_{jx}r_{ij}}}{L_{i}}$
 
 <p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} softmax(S*R)_{ix}v_{xj} = \sum _{x} \frac{e^{S_{ix}r_{ix}}}{L_{i}}v_{xj} = \sum _{x} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}{L_{i}}v_{xj}$
-</p>
-
-## 行表示
-<p>
-$L_{i} = \sum _{j}e^{S_{ij}r_{ij}} = \sum _{j} e^{\sum _{x}q_{ix}k_{jx}r_{ij}} = e^{q_{i}k_{j}^{T}r_{ij}} $
-</p>
-
-<p>
-$o_{i} = \sum _{x} \frac{e^{q_{i}k_{x}^{T}r_{ix}}}{L_{i}}v_{x}$
 </p>
 
 # backward
@@ -129,18 +120,18 @@ $= \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 # 链式法则
 
 ## $q$链式法则
-$\frac {\partial f(attention(q))}{\partial q_{ij}}$
+$\frac {\partial f(o(q))}{\partial q_{ij}}$
 
 <p>
-$=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial q_{ij}}$
+$=\sum_{a}\sum_{b} \frac {\partial f(o(q))}{\partial o(q)_{ab}} . \frac {\partial o(q)_{ab}}{\partial q_{ij}}$
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial q_{ij}}$
+$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial o(q)_{ab}}{\partial q_{ij}}$
 </p>
 
 <p>
-$=\sum_{b} df_{ib} . \frac {\partial attention(q)_{ib}}{\partial q_{ij}}$
+$=\sum_{b} df_{ib} . \frac {\partial o(q)_{ib}}{\partial q_{ij}}$
 </p>
 
 $=\sum_{b} df_{ib} . {\frac{{\sum_{x}k_{xj}r_{ix}.e^{\sum_{y} q_{iy}k_{xy}r_{ix}}}.L_{i}.v_{xb} - \sum_{x}e^{\sum_{y} q_{iy}k_{xy}r_{ix}}.\sum_{w}k_{wj}r_{iw}e^{\sum_{z}q_{iz}k_{wz}r_{iw}} . v_{xb}}{L_{i}^{2}}}$
@@ -173,7 +164,7 @@ $=\sum_{w}p_{iw}.(\sum_{b}df_{ib}v_{wb} - \sum_{b}o_{ib} df_{ib}) .k_{wj}r_{iw}$
 #### 变形一
 $dp_{ij} = \sum_{x}df_{ix}v_{jx} = df_{i}v_{j}^T$
 
-$\frac {\partial f(attention(q))}{\partial q_{ij}}$
+$\frac {\partial f(o(q))}{\partial q_{ij}}$
 
 $=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{e^{q_{i}k_{x}^T r_{ix}}}{L_{i}} .df_{i}v_{x}^T) .k_{wj}r_{iw}$
 
@@ -181,7 +172,7 @@ $=\sum_{w}p_{iw}.(df_{i}v_{w}^{T} - \sum_{x}p_{ix} .df_{i}v_{x}^T) .k_{wj}r_{iw}
 
 $= \sum_{w}p_{iw}.(dp_{iw} - \sum_{x}p_{ix} .dp_{ix}) .k_{wj}r_{iw}$
 
-$\frac {\partial f(attention(q))}{\partial q_{i}}$
+$\frac {\partial f(o(q))}{\partial q_{i}}$
 
 $=\sum_{w}\frac{{e^{q_{i}k_{w}^T r_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{x}\frac{e^{q_{i}k_{x}^T r_{ix}}}{L_{i}} .df_{i}v_{x}^T)r_{iw}.k_{w}$
 
@@ -190,7 +181,7 @@ $=\sum_{w} p_{iw}.(df_{i}v_{w}^{T} - \sum_{x}p_{iw} .df_{i}v_{x}^T)r_{iw}.k_{w}$
 $=\sum_{w} p_{iw}.(dp_{iw} - \sum_{x}p_{iw} .dp_{ix})r_{iw}.k_{w}$
 
 ### 变形二
-$\frac {\partial f(attention(q))}{\partial q_{ij}}$
+$\frac {\partial f(o(q))}{\partial q_{ij}}$
 
 $=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{b}o_{ib}df_{ib})r_{iw}.k_{wj}$
 
@@ -198,7 +189,7 @@ $=\sum_{w}p_{iw}.(df_{i}v_{w}^{T} - o_idf_{i}^T)r_{iw} .k_{wj}$
 
 $=\sum_{w}p_{iw}.(dp_{iw} - o_idf_{i}^T)r_{iw} .k_{wj}$
 
-$\frac {\partial f(attention(q))}{\partial q_{i}}$
+$\frac {\partial f(o(q))}{\partial q_{i}}$
 
 $=\sum_{w}\frac{{e^{q_{i}k_{w}^Tr_{iw}}}}{L_{i}}.(df_{i}v_{w}^{T} - \sum_{b}o_{ib}df_{ib})r_{iw}.k_{w}$
 
@@ -212,7 +203,7 @@ $P=softmax(QK^{T}*R)$
 $dP=dfV^{T}$
 
 #### 变形一
-$\frac {\partial f(attention(q))}{\partial q}$
+$\frac {\partial f(o(q))}{\partial q}$
 
 <p>
 $=((softmax(QK^{T}*R)* (dfV^{T} - sum(softmax(QK^{T}*R) * (dfV^{T}), dim=-1, keepdim=True)))*R)K$
@@ -221,7 +212,7 @@ $=((softmax(QK^{T}*R)* (dfV^{T} - sum(softmax(QK^{T}*R) * (dfV^{T}), dim=-1, kee
 $=(P * (dfV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
 
 #### 变形二
-$\frac {\partial f(attention(q))}{\partial q}$
+$\frac {\partial f(o(q))}{\partial q}$
 
 <p>
 $= (softmax(QK^{T}*R)* (dfV^{T} - sum(O.df, dim=-1, keepdim=True))*R)K$
@@ -231,14 +222,14 @@ $= (P* (dP - sum(O.df, dim=-1, keepdim=True))*R)K$
 
 ## $k$链式法则
 ### 元素形式
-$\frac {\partial f(attention(k))}{\partial k_{ij}}$
+$\frac {\partial f(o(k))}{\partial k_{ij}}$
 
 <p>
-$=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+$=\sum_{a}\sum_{b} \frac {\partial f(o(q))}{\partial o(q)_{ab}} . \frac {\partial o(q)_{ab}}{\partial k_{ij}}$
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab}  \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+$=\sum_{a}\sum_{b} df_{ab}  \frac {\partial o(q)_{ab}}{\partial k_{ij}}$
 </p>
 
 $=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}r_{ai}.e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}.L_{a}.v_{xb} - \sum_{x}e^{\sum_{y} q_{ay}k_{xy}r_{ax}}.q_{aj}r_{ai}.{e^{\sum_{z}q_{az}k_{iz}r_{ai}}} . v_{xb}}{L_{a}^{2}}}$
@@ -259,7 +250,7 @@ $=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b}df_{ab} .v
 
 ### 行形式
 #### 变形一
-$\frac {\partial f(attention(k))}{\partial k_{ij}}$
+$\frac {\partial f(o(k))}{\partial k_{ij}}$
 
 $= \sum_{a} \frac{{e^{q_{a}k_{i}^{T}r_{ai}}}}{L_{a}} . (df_{a}v_{i}^{T} - \sum_{x}{\frac{e^{q_{a}k_{x}^{T}r_{ax}}}{L_{a}}}.df_{a}v_{x}^{T})r_{ai} .q_{aj}$
 
@@ -267,12 +258,12 @@ $= \sum_{a} p_{ai} . (df_{a}v_{i}^{T} - \sum_{x} p_{ax}.df_{a}v_{x}^{T})r_{ai} .
 
 $= \sum_{a} p_{ai} . (dp_{ai} - \sum_{x} p_{ax}.dp_{ax})r_{ai} .q_{aj}$
 
-$\frac {\partial f(attention(k))}{\partial k_{i}}$
+$\frac {\partial f(o(k))}{\partial k_{i}}$
 
 $= \sum_{a} p_{ai} . (dp_{ai} - \sum_{x} p_{ax}.dp_{ax})r_{ai} .q_{a}$
 
 #### 变形二
-$\frac {\partial f(attention(k))}{\partial k_{ij}}$
+$\frac {\partial f(o(k))}{\partial k_{ij}}$
 
 $=\sum_{a} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}}{L_{a}} . (\sum_{b}df_{ab} .v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}}}{L_{a}}}v_{xb})df_{ab})r_{ai} .q_{aj}$
 
@@ -280,26 +271,26 @@ $=\sum_{a} p_{ai}. (dp_{ax} - \sum_{b}o_{ab}df_{ab})r_{ai} .q_{aj}$
 
 ### 矩阵形式
 #### 变形一
-$\frac {\partial f(attention(k))}{\partial k}$
+$\frac {\partial f(o(k))}{\partial k}$
 
 $= (P*(dP - sum(P * dP, dim=-1, keepdim=True))*R)^{T}Q$
 
 #### 变形二
 
-$\frac {\partial f(attention(k))}{\partial k}$
+$\frac {\partial f(o(k))}{\partial k}$
 
 $= (P*(dP - sum(O * df, dim=-1, keepdim=True))*R)^{T}Q$
 
 ## $v$链式法则
 ### 元素形式
-$\frac {\partial f(attention(v))}{\partial v_{ij}}$
+$\frac {\partial f(o(v))}{\partial v_{ij}}$
 
 <p>
-$=\sum_{a}\sum_{b} \frac {\partial f(attention(v))}{\partial attention(v)_{ab}} . \frac {\partial attention(v)_{ab}}{\partial v_{ij}}$
+$=\sum_{a}\sum_{b} \frac {\partial f(o(v))}{\partial o(v)_{ab}} . \frac {\partial o(v)_{ab}}{\partial v_{ij}}$
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(v)_{ab}}{\partial v_{ij}}$
+$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial o(v)_{ab}}{\partial v_{ij}}$
 </p>
 
 $=\sum_{a} df_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
@@ -307,4 +298,4 @@ $=\sum_{a} df_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 $=\sum_{a} df_{aj} . p_{ai}$
 
 ### 矩阵形式
-$\frac {\partial f(attention(v))}{\partial v} = softmax(QK^T*R)^{T}df=P^Tdf$
+$\frac {\partial f(o(v))}{\partial v} = softmax(QK^T*R)^{T}df=P^Tdf$
