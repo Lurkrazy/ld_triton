@@ -195,7 +195,7 @@ $=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} 
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
+$=\sum_{a}\sum_{b} df_{ab}  \frac {\partial attention(q)_{ab}}{\partial k_{ij}}$
 </p>
 
 $=\sum_{a}\sum_{b} df_{ab} . {\frac{{q_{aj}.exp(\sum_{y} q_{ay}k_{iy})}.L_{a}.v_{xb} - \sum_{x}exp(\sum_{y} q_{ay}k_{xy}).q_{aj}.{exp(\sum_{z}q_{az}k_{iz})} . v_{xb}}{L_{a}^{2}}}$
@@ -224,14 +224,14 @@ $\frac {\partial f(attention(k))}{\partial k} = (softmax(QK^{T})*(dfV^{T} - sum(
 
 ## $v$链式法则
 ### 元素形式
-$\frac {\partial f(attention(q))}{\partial v_{ij}}$
+$\frac {\partial f(attention(v))}{\partial v_{ij}}$
 
 <p>
-$=\sum_{a}\sum_{b} \frac {\partial f(attention(q))}{\partial attention(q)_{ab}} . \frac {\partial attention(q)_{ab}}{\partial v_{ij}}$
+$=\sum_{a}\sum_{b} \frac {\partial f(attention(v))}{\partial attention(v)_{ab}} . \frac {\partial attention(v)_{ab}}{\partial v_{ij}}$
 </p>
 
 <p>
-$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(q)_{ab}}{\partial v_{ij}}$
+$=\sum_{a}\sum_{b} df_{ab} . \frac {\partial attention(v)_{ab}}{\partial v_{ij}}$
 </p>
 
 $=\sum_{a} df_{aj} . \frac{exp(\sum_{y} q_{ay}k_{iy})}{L_{a}}$
