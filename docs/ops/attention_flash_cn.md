@@ -145,15 +145,25 @@ $O_{i,j,N-1} = O_{i,j}$
 
 ### flash v2
 
+<p>
 $O_{i,j,n-1} = \sum _{x=0}^{n-1} e^{S_{ix}-M_{i,(0,n-1)}}v_{xj} = \sum _{x=0}^{n-1} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n-1)}}v_{xj}$
+</p>
 
+<p>
 $O_{i,j,n+m}= \sum _{x=0}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \sum _{x=0}^{n-1} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj} + \sum _{x=n}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}\sum _{x=0}^{n-1} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n-1)}}v_{xj} + \sum _{x=n}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}O_{i,j,n-1} + \sum _{x=n}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+</p>
 
 $n+m=N-1$时，
 
