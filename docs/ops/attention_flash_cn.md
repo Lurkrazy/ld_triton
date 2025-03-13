@@ -222,29 +222,29 @@ $=\sum_{a} do_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 #### $dq$ flash形式
 $dQ_{i,j,n-1}=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0, N-1)}}(\sum_{b}do_{ib}v_{wb} - \sum_{b}(\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,N-1)}}}{L_{i,(0,N-1)}}v_{xb})do_{ib})r_{iw}k_{wj}$
 
-$=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(P_{iw} - D_{i})r_{iw}k_{wj}$
+$=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
 
 $dQ_{i,j,n+m}=\sum_{w=0}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(\sum_{b}do_{ib}v_{wb} - \sum_{b}(\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,N-1)}}}{L_{i,(0,N-1)}}v_{xb})do_{ib})r_{iw}k_{wj}$
 
-$=\sum_{w=0}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(P_{iw} - D_{i})r_{iw}k_{wj}$
+$=\sum_{w=0}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
 
-$=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(P_{iw} - D_{i})r_{iw}k_{wj} + \sum_{w=n}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(P_{iw} - D_{i})r_{iw}k_{wj}$
+$=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj} + \sum_{w=n}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
 
-$=dQ_{i,j,n-1} + \sum_{w=n}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(P_{iw} - D_{i})r_{iw}k_{wj}$
+$=dQ_{i,j,n-1} + \sum_{w=n}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
 
 #### $dk$ flash形式
 
 $dK_{i,j,n-1}=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (\sum_{b} do_{ab}v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}}v_{xb})do_{ab})r_{ai}q_{aj}$
 
-$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (P_{ax} - \sum_{b}o_{ab}do_{ab})r_{ai}q_{aj}$
+$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - \sum_{b}o_{ab}do_{ab})r_{ai}q_{aj}$
 
-$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (P_{ax} - D_{a})r_{ai}q_{aj}$
+$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - D_{a})r_{ai}q_{aj}$
 
-$dK_{i,j,n+m}=\sum_{a=0}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (P_{ax} - D_{a})r_{ai}q_{aj}$
+$dK_{i,j,n+m}=\sum_{a=0}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - D_{a})r_{ai}q_{aj}$
 
-$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (P_{ax} - D_{a})r_{ai}q_{aj} + \sum_{a=n}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (P_{ax} - D_{a})r_{ai}q_{aj} $
+$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - D_{a})r_{ai}q_{aj} + \sum_{a=n}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - D_{a})r_{ai}q_{aj} $
 
-$=dK_{i,j,n-1} + \sum_{a=n}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (P_{ax} - D_{a})r_{ai}q_{aj} $
+$=dK_{i,j,n-1} + \sum_{a=n}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - D_{a})r_{ai}q_{aj} $
 
 #### $dv$ flash形式
 $dV_{i,j}=\frac {\partial f(o(v))}{\partial v_{ij}}=\sum_{a} do_{aj} . \frac{exp(\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a})}{L_{a}}$
