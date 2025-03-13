@@ -205,18 +205,18 @@ $dP=dOV^{T}$
 #### 变形一
 $\frac {\partial f(o(q))}{\partial q}$
 
-<p>
+
 $=((softmax(QK^{T}*R)* (dOV^{T} - sum(softmax(QK^{T}*R) * (dOV^{T}), dim=-1, keepdim=True)))*R)K$
-</p>
+
 
 $=(P * (dOV^{T} - sum(P * dP, dim=-1, keepdim=True))*R)K$
 
 #### 变形二
 $\frac {\partial f(o(q))}{\partial q}$
 
-<p>
-$= (softmax(QK^{T}*R)* (dOV^{T} - sum(O.dO, dim=-1, keepdim=True))*R)K$
-</p>
+
+$= (softmax(QK^{T}*R)* (dOV^{T} - sum(softmax(QK^{T}*R)V*dO, dim=-1, keepdim=True))*R)K$
+
 
 $= (P* (dP - sum(O.dO, dim=-1, keepdim=True))*R)K$
 

@@ -312,7 +312,18 @@ $=\sum_{a=0}^{n-1} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1
 
 $=O_{i,j,n-1} + \sum_{a=n}^{n+m} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj}$
 
-#### $dv$ flash形式
+### $dv$ flash形式
+#### flash v1
+$dV_{i,j,n-1} = \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+
+$dV_{i,j,n+m}= \sum_{a=0}^{n+m} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+
+$= \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}} + \sum_{a=n}^{n+m} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+
+$= dV_{i,j,n-1} + \sum_{a=n}^{n+m} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+
+#### flash v2
+
 $dV_{i,j,n-1} = \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
 
 $= \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{e^{log(L_{a,(0,N-1)})}}$
