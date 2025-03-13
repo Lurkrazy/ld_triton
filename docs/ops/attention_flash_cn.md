@@ -25,11 +25,17 @@ $O = PV  \in R^{N \times d}$
 
 $S_{ij} = \sum_{x} q_{ix}k_{jx}r_{ij}$
 
+<p>
 $L_{i} = \sum _{j}e^{S_{ij}} = \sum _{j} e^{\sum _{x}q_{ix}k_{jx}r_{ij}}$
+</p>
 
+<p>
 $p_{ix}=softmax(QK^{T}*R)_{ix} = \frac{e^{S_{ij}}}{L_{i}}=\frac{e^{\sum_{x} q_{ix}k_{jx}r_{ij}}}{L_{i}}$
+</p>
 
+<p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} \frac{e^{S_{ix}}}{L_{i}}v_{xj} = \sum _{x} \frac{e^{\sum_{y} q_{iy}k_{xy}}}{L_{i}}v_{xj}$
+</p>
 
 ## attention实现形式
 
@@ -37,12 +43,17 @@ $S_{ij} = \sum_{x} q_{ix}k_{jx}r_{ij}$
 
 $M_{i} = max(\sum_{x} q_{ix}k_{0x}r_{i,0}, \sum_{x} q_{ix}k_{1x}r_{i,1}, ......, \sum_{x} q_{ix}k_{N-1,x}r_{i,N-1})$
 
+<p>
 $L_{i} = \sum_{j}e^{S_{ij}-M_{i}} = \sum _{j} e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i}}$
+</p>
 
+<p>
 $p_{ix}=softmax(QK^{T}*R)_{ix} = \frac{e^{S_{ij}-M_{i}}}{L_{i}}=\frac{e^{\sum_{x} q_{ix}k_{jx}r_{ij}-M_{i}}}{L_{i}}$
+</p>
 
+<p>
 $o_{ij} = \sum _{x} p_{ix}v_{xj} = \sum _{x} \frac{e^{S_{ix}-M_{i}}}{L_{i}}v_{xj} = \sum _{x} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i}}}{L_{i}}v_{xj}$
-
+</p>
 
 ## flash形式
 
@@ -50,43 +61,75 @@ $S_{ij} = \sum_{x} q_{ix}k_{jx}r_{ij}$
 
 $M_{i,(a,b)} = max(\sum_{x} q_{ix}k_{ax}r_{ia}, \sum_{x} q_{ix}k_{a+1,x}r_{i,a+1}, ......, \sum_{x} q_{ix}k_{b,x}r_{ib})$
 
+<p>
 $L_{i,(a,b)} = \sum _{j=a}^{b}e^{S_{ij}-M_{i,(a,b)}} = \sum _{j=a}^{b} e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i,(a,b)}}$
+</p>
 
 $P_{i,x,(a,b)}=\frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(a,b)}}}{L_{i,(a,b)}}$
 
 $M_{i,(0,n-1)} = max(\sum_{x} q_{ix}k_{0x}r_{i0}, \sum_{x} q_{ix}k_{1x}r_{i1}, ......, \sum_{x} q_{ix}k_{n-1,x}r_{i,n-1})$
 
+<p>
 $L_{i,(0,n-1)} = \sum _{j=0}^{n-1}e^{S_{ij}-M_{i,(0,n-1)}} = \sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i,(0,n-1)}}$
+</p>
 
+<p>
 $O_{i,j,n-1} = \sum _{x=0}^{n-1} \frac{e^{S_{ix}-M_{i,(0,n-1)}}}{L_{i,(0,n-1)}}v_{xj} = \sum _{x=0}^{n-1} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n-1)}}}{L_{i,(0,n-1)}}v_{xj}$
+</p>
 
 $M_{i,(0,n+m)} = max(\sum_{x} q_{ix}k_{0x}r_{i0}, \sum_{x} q_{ix}k_{1x}r_{i1}, ......, \sum_{x} q_{ix}k_{n+m,x}r_{i,n+m}) = max(M_{i,(0,n-1)}, M_{i, (n, n+m)})$
 
+<p>
 $L_{i,(0,n+m)} = \sum _{j=0}^{n+m}e^{S_{ij}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $= \sum _{j=0}^{n+m} e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $= \sum _{j=0}^{n-1} e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i,(0,n+m)}} + \sum _{j=n}^{n+m}e^{\sum _{x}q_{ix}k_{j,x}r_{ij}-M_{i,(0,n+m)}} $
+</p>
 
+<p>
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}\sum _{j=0}^{n-1}e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i,(0,n-1)}} + \sum _{j=n}^{n+m}e^{\sum _{x}q_{ix}k_{j,x}r_{ij}-M_{i,(0,n+m)}}$
+</p>
 
+<p>
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}\sum _{j=0}^{n-1}e^{\sum _{x}q_{ix}k_{jx}r_{ij}-M_{i,(0,n)}} + e^{M_{i, (n,n+m)} - M_{i, (0,n+m)}}\sum _{j=n}^{n+m}e^{\sum _{x}q_{ix}k_{j,x}r_{ij}-M_{i,(n,n+m)}}$
+</p>
 
+<p>
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}L_{i,(0,n-1)} + e^{M_{i, (n,n+m)} - M_{i, (0,n+m)}}L_{i,(n,n+m)}$
+</p>
 
+<p>
 $O_{i,j,n+m}= \sum _{x=0}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \sum _{x=0}^{n-1} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj} + \sum _{x=n}^{n+m}\frac{e^{\sum_{y} q_{iy}k_{x,y}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{x,j}$
+</p>
 
+<p>
 $= \sum _{x=0}^{n-1} \frac{L_{i,(0,n-1)}}{L_{i,(0,n+m)}} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}}v_{xj} + \sum _{x=n}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \sum _{x=0}^{n-1} \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} \frac{e^{\sum_{y} q_{iy}k_{xy}-M_{i,(0,n-1)}}}{L_{i,(0,n-1)}}v_{xj} + \sum _{x=n}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \sum _{x=n}^{n+m} \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(n,n+m)}}}{L_{i,(n,n+m)}}v_{xj}$
+</p>
 
+<p>
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \sum _{x=n}^{n+m} \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}P_{i,x,(n,n+m)}v_{xj}$
+</p>
 
+<p>
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}\sum _{x=n}^{n+m} P_{i,x,(n,n+m)}v_{xj}$
+</p>
 
 $= \frac{L_{i,(0,n-1)}e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}}{L_{i,(0,n-1)}} O_{i,j,n-1} + \frac{L_{i,(n,n+m)}e^{M_{i,(n,n+m)}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}P_{i,(n,n+m)}v_{j}^{T}$
 
@@ -107,18 +150,26 @@ $O=softmax(QK^{T}*R)V$
 
 $dP=dOV^{T}$
 
+<p>
 $\frac {\partial f(o(q))}{\partial q} =(softmax(QK^{T}*R)* (dOV^{T} - sum(softmax(QK^{T}*R)V * dO, dim=-1, keepdim=True))*R)K$
+</p>
 
+<p>
 $=(softmax(QK^{T}*R)* (dOV^{T} - sum(softmax(QK^{T}*R)V * dO))*R)K$
+</p>
 
 $= (P*(dP - sum(O*dO))*R)K$
 
 
 $\frac {\partial f(o(k))}{\partial k}$
 
+<p>
 $= (softmax(QK^{T}*R)*(dOV^{T} - sum(softmax(QK^{T}*R)V * dO, dim=-1, keepdim=True))*R)^{T}Q$
+</p>
 
+<p>
 $= (softmax(QK^{T}*R)*(dOV^{T} - sum(softmax(QK^{T}*R)V * dO))*R)^{T}Q$
+</p>
 
 $= (P*(dP - sum(O * dO))*R)^{T}Q$
 
