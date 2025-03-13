@@ -103,6 +103,8 @@ $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}\sum _{j=0}^{n-1}e^{\sum _{x}q_{ix}k_{jx}r
 $= e^{M_{i, (0,n-1)} - M_{i, (0,n+m)}}L_{i,(0,n-1)} + e^{M_{i, (n,n+m)} - M_{i, (0,n+m)}}L_{i,(n,n+m)}$
 </p>
 
+### flash v1
+
 <p>
 $O_{i,j,n+m}= \sum _{x=0}^{n+m} \frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}}{L_{i,(0,n+m)}}v_{xj}$
 </p>
@@ -140,6 +142,28 @@ $M_{i,(0, N-1)} = M_{i}$
 $L_{i,(0, N-1)} = L_{i}$
 
 $O_{i,j,N-1} = O_{i,j}$
+
+### flash v2
+
+$O_{i,j,n-1} = \sum _{x=0}^{n-1} e^{S_{ix}-M_{i,(0,n-1)}}v_{xj} = \sum _{x=0}^{n-1} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n-1)}}v_{xj}$
+
+$O_{i,j,n+m}= \sum _{x=0}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+
+$= \sum _{x=0}^{n-1} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj} + \sum _{x=n}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+
+$= e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}\sum _{x=0}^{n-1} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n-1)}}v_{xj} + \sum _{x=n}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+
+$= e^{M_{i,(0,n-1)}-M_{i,(0,n+m)}}O_{i,j,n-1} + \sum _{x=n}^{n+m} e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,n+m)}}v_{xj}$
+
+$n+m=N-1$时，
+
+$M_{i,(0, N-1)} = M_{i}$
+
+$L_{i,(0, N-1)} = L_{i}$
+
+$O_{i,j,N-1} = L_{i, (0, N-1)}O_{i,j}$
+
+$O_{i,j} = (1/L_{i, (0, N-1)})O_{i,j,N-1}$
 
 # backward
 ## 链式法则
@@ -219,7 +243,7 @@ $dV_{ij} = \frac {\partial f(o(v))}{\partial v_{ij}}$
 $=\sum_{a} do_{aj} . \frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}}}{L_{a}}$
 
 ### flash形式
-#### $dq$ flash形式
+#### $dq$ flash v1
 $dQ_{i,j,n-1}=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0, N-1)}}(\sum_{b}do_{ib}v_{wb} - \sum_{b}(\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,N-1)}}}{L_{i,(0,N-1)}}v_{xb})do_{ib})r_{iw}k_{wj}$
 
 $=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
@@ -232,7 +256,25 @@ $=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0
 
 $=dQ_{i,j,n-1} + \sum_{w=n}^{n+m}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0,N-1)}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
 
-#### $dk$ flash形式
+#### $dq$ flash v2
+
+$D=rowsum(dO*O)$
+
+$dQ_{i,j,n-1}=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{L_{i,(0, N-1)}}(\sum_{b}do_{ib}v_{wb} - \sum_{b}(\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,N-1)}}}{L_{i,(0,N-1)}}v_{xb})do_{ib})r_{iw}k_{wj}$
+
+$=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{e^{log({L_{i,(0, N-1)}})}}(\sum_{b}do_{ib}v_{wb} - \sum_{b}(\sum_{x}\frac{e^{\sum_{y} q_{iy}k_{xy}r_{ix}-M_{i,(0,N-1)}}}{L_{i,(0,N-1)}}v_{xb})do_{ib})r_{iw}k_{wj}$
+
+$=\sum_{w=0}^{n-1}\frac{{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}}}}{e^{log({L_{i,(0, N-1)}})}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
+
+$=\sum_{w=0}^{n-1}{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}-log({L_{i,(0, N-1)}})}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
+
+$dQ_{i,j,n+m}=\sum_{w=0}^{n+m}{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}-log({L_{i,(0, N-1)}})}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
+
+$=\sum_{w=0}^{n-1}{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}-log({L_{i,(0, N-1)}})}}(dP_{iw} - D_{i})r_{iw}k_{wj} + \sum_{w=n}^{n+m}{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}-log({L_{i,(0, N-1)}})}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
+
+$=dQ_{i,j,n-1} + \sum_{w=n}^{n+m}{e^{\sum_{y} q_{iy}k_{wy}r_{iw}-M_{i,(0,N-1)}-log({L_{i,(0, N-1)}})}}(dP_{iw} - D_{i})r_{iw}k_{wj}$
+
+#### $dk$ flash v1
 
 $dK_{i,j,n-1}=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (\sum_{b} do_{ab}v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}}v_{xb})do_{ab})r_{ai}q_{aj}$
 
@@ -244,11 +286,31 @@ $=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(
 
 $=dK_{i,j,n-1} + \sum_{a=n}^{n+m} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (dP_{ax} - D_{a})r_{ai}q_{aj} $
 
+#### $dk$ flash v2
+
+$dK_{i,j,n-1}=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{L_{a,(0,N-1)}} (\sum_{b} do_{ab}v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}}v_{xb})do_{ab})r_{ai}q_{aj}$
+
+$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{e^{log(L_{a,(0,N-1)})}} (\sum_{b} do_{ab}v_{xb} - \sum_{b}(\sum_{x}{\frac{e^{\sum_{y} q_{ay}k_{xy}r_{ax}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}}v_{xb})do_{ab})r_{ai}q_{aj}$
+
+$=\sum_{a=0}^{n-1} \frac{{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}}{e^{log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj}$
+
+$=\sum_{a=0}^{n-1} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj}$
+
+$dK_{i,j,n+m}=\sum_{a=0}^{n+m} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj}$
+
+$=\sum_{a=0}^{n-1} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj} + \sum_{a=n}^{n+m} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj}$
+
+$=O_{i,j,n-1} + \sum_{a=n}^{n+m} {e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}} (dP_{ax-D_{i}})r_{ai}q_{aj}$
+
 #### $dv$ flash形式
 $dV_{i,j,n-1} = \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
 
-$dV_{i,j,n+m}= \sum_{a=0}^{n+m} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+$= \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{e^{log(L_{a,(0,N-1)})}}$
 
-$= \sum_{a=0}^{n-1} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}} + \sum_{a=n}^{n+m} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+$= \sum_{a=0}^{n-1} do_{aj}e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}$
 
-$= dV_{i,j,n-1} + \sum_{a=n}^{n+m} do_{aj}\frac{e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}}}{L_{a,(0,N-1)}}$
+$dV_{i,j,n+m}= \sum_{a=0}^{n+m} do_{aj}e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}$
+
+$= \sum_{a=0}^{n-1} do_{aj}e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})} + \sum_{a=n}^{n+m} do_{aj}e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}$
+
+$= dV_{i,j,n-1} + \sum_{a=n}^{n+m} do_{aj}e^{\sum_{y} q_{ay}k_{iy}r_{ai}-M_{a,(0,N-1)}-log(L_{a,(0,N-1)})}$
