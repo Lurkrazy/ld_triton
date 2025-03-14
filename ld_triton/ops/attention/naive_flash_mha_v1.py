@@ -16,59 +16,59 @@ class _naive_mha_flash_v1(torch.autograd.Function):
         M = torch.full((Z, H, N_CTX, 1), float('-inf'), device=Q.device, dtype=Q.dtype) # [Z, H, N_CTX, 1]
         L = torch.zeros((Z, H, N_CTX, 1), device=Q.device, dtype=Q.dtype)               # [Z, H, N_CTX, 1]
         
-        # for z in range(Z):
-        #     for h in range(H):
-        #         for j in range(0, N_CTX, BLOCK_N):
-        #             k = K[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
-        #             v = V[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
-        #             for i in range(0, N_CTX, BLOCK_M):
-        #                 q = Q[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
-        #                 o = O[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
-        #                 l = L[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
-        #                 m = M[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
+        for z in range(Z):
+            for h in range(H):
+                for j in range(0, N_CTX, BLOCK_N):
+                    k = K[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
+                    v = V[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
+                    for i in range(0, N_CTX, BLOCK_M):
+                        q = Q[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
+                        o = O[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
+                        l = L[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
+                        m = M[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
 
-        #                 s = torch.matmul(q, k.t()) * sm_scale                        # [BLOCK_M, BLOCK_N]
-        #                 if causal:
-        #                     offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
-        #                     offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
-        #                     s[offs_m < offs_n] = torch.finfo(s.dtype).min
-        #                 m_j, _ = torch.max(s, dim=-1, keepdim=True)                  # [BLOCK_M, 1]
-        #                 p = torch.exp(s.float() - m_j).to(q.dtype)                   # [BLOCK_M, BLOCK_N]
-        #                 l_j = torch.sum(p, dim=-1, keepdim=True)                     # [BLOCK_M, 1]
+                        s = torch.matmul(q, k.t()) * sm_scale                        # [BLOCK_M, BLOCK_N]
+                        if causal:
+                            offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
+                            offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
+                            s[offs_m < offs_n] = torch.finfo(s.dtype).min
+                        m_j, _ = torch.max(s, dim=-1, keepdim=True)                  # [BLOCK_M, 1]
+                        p = torch.exp(s.float() - m_j).to(q.dtype)                   # [BLOCK_M, BLOCK_N]
+                        l_j = torch.sum(p, dim=-1, keepdim=True)                     # [BLOCK_M, 1]
 
-        #                 m_new = torch.max(m, m_j)                                    # [BLOCK_M, 1]
-        #                 l_new = torch.exp(m - m_new) * l + torch.exp(m_j - m_new) * l_j # [BLOCK_M, 1]
-        #                 o = (1.0 / l_new) * (l * torch.exp(m - m_new) * o +  torch.exp(m_j - m_new) * torch.matmul( p, v)) # [BLOCK_M, HEAD_DIM]
+                        m_new = torch.max(m, m_j)                                    # [BLOCK_M, 1]
+                        l_new = torch.exp(m - m_new) * l + torch.exp(m_j - m_new) * l_j # [BLOCK_M, 1]
+                        o = (1.0 / l_new) * (l * torch.exp(m - m_new) * o +  torch.exp(m_j - m_new) * torch.matmul( p, v)) # [BLOCK_M, HEAD_DIM]
 
-        #                 O[z, h, i: i+BLOCK_M] = o        # [BLOCK_M, HEAD_DIM]
-        #                 L[z, h, i: i+BLOCK_M, :] = l_new # [BLOCK_M, 1]
-        #                 M[z, h, i: i+BLOCK_M, :] = m_new # [BLOCK_M, 1]
+                        O[z, h, i: i+BLOCK_M] = o        # [BLOCK_M, HEAD_DIM]
+                        L[z, h, i: i+BLOCK_M, :] = l_new # [BLOCK_M, 1]
+                        M[z, h, i: i+BLOCK_M, :] = m_new # [BLOCK_M, 1]
 
-        for j in range(0, N_CTX, BLOCK_N):
-            k = K[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
-            v = V[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
-            for i in range(0, N_CTX, BLOCK_M):
-                q = Q[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                o = O[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                l = L[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
-                m = M[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
+        # for j in range(0, N_CTX, BLOCK_N):
+        #     k = K[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
+        #     v = V[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
+        #     for i in range(0, N_CTX, BLOCK_M):
+        #         q = Q[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         o = O[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         l = L[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
+        #         m = M[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
                 
-                s = torch.matmul(q, k.permute(0, 1, 3, 2)) * sm_scale        # [Z, H, BLOCK_M, BLOCK_N]
-                if causal:
-                    offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
-                    offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
-                    s[:, :, offs_m < offs_n] = torch.finfo(s.dtype).min
-                m_j, _ = torch.max(s, dim=-1, keepdim=True)                  # [Z, H, BLOCK_M, 1]
-                p = torch.exp(s.float() - m_j).to(q.dtype)                   # [Z, H, BLOCK_M, BLOCK_N]
-                l_j = torch.sum(p, dim=-1, keepdim=True)                     # [Z, H, BLOCK_M, 1]
+        #         s = torch.matmul(q, k.permute(0, 1, 3, 2)) * sm_scale        # [Z, H, BLOCK_M, BLOCK_N]
+        #         if causal:
+        #             offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
+        #             offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
+        #             s[:, :, offs_m < offs_n] = torch.finfo(s.dtype).min
+        #         m_j, _ = torch.max(s, dim=-1, keepdim=True)                  # [Z, H, BLOCK_M, 1]
+        #         p = torch.exp(s.float() - m_j).to(q.dtype)                   # [Z, H, BLOCK_M, BLOCK_N]
+        #         l_j = torch.sum(p, dim=-1, keepdim=True)                     # [Z, H, BLOCK_M, 1]
 
-                m_new = torch.max(m, m_j)                                    # [Z, H, BLOCK_M, 1]
-                l_new = torch.exp(m - m_new) * l + torch.exp(m_j - m_new) * l_j # [Z, H, BLOCK_M, 1]
-                o = (1.0 / l_new) * (l * torch.exp(m - m_new) * o +  torch.exp(m_j - m_new) * torch.matmul( p, v)) # [Z, H, BLOCK_M, HEAD_DIM]
+        #         m_new = torch.max(m, m_j)                                    # [Z, H, BLOCK_M, 1]
+        #         l_new = torch.exp(m - m_new) * l + torch.exp(m_j - m_new) * l_j # [Z, H, BLOCK_M, 1]
+        #         o = (1.0 / l_new) * (l * torch.exp(m - m_new) * o +  torch.exp(m_j - m_new) * torch.matmul( p, v)) # [Z, H, BLOCK_M, HEAD_DIM]
 
-                O[:, :, i: i+BLOCK_M] = o        # [Z, H, BLOCK_M, HEAD_DIM]
-                L[:, :, i: i+BLOCK_M, :] = l_new # [Z, H, BLOCK_M, 1]
-                M[:, :, i: i+BLOCK_M, :] = m_new # [Z, H, BLOCK_M, 1]
+        #         O[:, :, i: i+BLOCK_M] = o        # [Z, H, BLOCK_M, HEAD_DIM]
+        #         L[:, :, i: i+BLOCK_M, :] = l_new # [Z, H, BLOCK_M, 1]
+        #         M[:, :, i: i+BLOCK_M, :] = m_new # [Z, H, BLOCK_M, 1]
         
         ctx.save_for_backward(Q, K, V, O, M, L)
         ctx.causal = causal
@@ -88,63 +88,68 @@ class _naive_mha_flash_v1(torch.autograd.Function):
         dQ = torch.zeros_like(Q)
         dK = torch.zeros_like(K)
         dV = torch.zeros_like(V)
-        # for z in range(Z):
-        #     for h in range(H):
-        #         for j in range(0, N_CTX, BLOCK_N):
-        #             k = K[z, h, j: j+BLOCK_N, :]                                       # [BLOCK_N, HEAD_DIM]
-        #             v = V[z, h, j: j+BLOCK_N, :]                                       # [BLOCK_N, HEAD_DIM]
-        #             dk = dK[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
-        #             dv = dV[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
-        #             for i in range(0, N_CTX, BLOCK_M):
-        #                 q  =  Q[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
-        #                 o  =  O[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
-        #                 do = dO[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
-        #                 dq = dQ[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
-        #                 l  =  L[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
-        #                 m  =  M[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
+        for z in range(Z):
+            for h in range(H):
+                for j in range(0, N_CTX, BLOCK_N):
+                    k = K[z, h, j: j+BLOCK_N, :]                                       # [BLOCK_N, HEAD_DIM]
+                    v = V[z, h, j: j+BLOCK_N, :]                                       # [BLOCK_N, HEAD_DIM]
+                    dk = dK[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
+                    dv = dV[z, h, j: j+BLOCK_N, :]                                     # [BLOCK_N, HEAD_DIM]
+                    for i in range(0, N_CTX, BLOCK_M):
+                        q  =  Q[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
+                        o  =  O[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
+                        do = dO[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
+                        dq = dQ[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, HEAD_DIM]
+                        l  =  L[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
+                        m  =  M[z, h, i: i+BLOCK_M, :]                                 # [BLOCK_M, 1]
 
-        #                 s = torch.matmul(q, k.t()) * sm_scale                          # [BLOCK_M, BLOCK_N]
-        #                 p = (1.0 / l) * torch.exp(s.float() - m).to(q.dtype)           # [BLOCK_M, BLOCK_N]
-        #                 dp = torch.matmul(do, v.t())                                   # [BLOCK_M, BLOCK_N]
-        #                 d = torch.sum(do * o, dim=-1, keepdim=True)                    # [BLOCK_M, 1]
-        #                 ds = p * (dp - d) * sm_scale                                   # [BLOCK_M, BLOCK_N]
-        #                 dq = dq + torch.matmul(ds, k)                                  # [BLOCK_M, HEAD_DIM]
-        #                 dk = dk + torch.matmul(ds.t(), q)                              # [BLOCK_N, HEAD_DIM]
-        #                 dv = dv + torch.matmul(p.t(), do)                              # [BLOCK_N, HEAD_DIM]
+                        s = torch.matmul(q, k.t()) * sm_scale                          # [BLOCK_M, BLOCK_N]
+                        if causal:
+                            offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
+                            offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
+                            s[offs_m < offs_n] = torch.finfo(s.dtype).min
+                        p = (1.0 / l) * torch.exp(s.float() - m).to(q.dtype)           # [BLOCK_M, BLOCK_N]
+                        dp = torch.matmul(do, v.t())                                   # [BLOCK_M, BLOCK_N]
+                        d = torch.sum(do * o, dim=-1, keepdim=True)                    # [BLOCK_M, 1]
+                        ds = p * (dp - d) * sm_scale                                   # [BLOCK_M, BLOCK_N]
+                        dq = dq + torch.matmul(ds, k)                                  # [BLOCK_M, HEAD_DIM]
+                        dk = dk + torch.matmul(ds.t(), q)                              # [BLOCK_N, HEAD_DIM]
+                        dv = dv + torch.matmul(p.t(), do)                              # [BLOCK_N, HEAD_DIM]
 
-        #                 dQ[z, h, i: i+BLOCK_M, :] = dq                                 # [BLOCK_M, HEAD_DIM]
-        #                 dK[z, h, j: j+BLOCK_N, :] = dk                                 # [BLOCK_N, HEAD_DIM]
-        #                 dV[z, h, j: j+BLOCK_N, :] = dv                                 # [BLOCK_N, HEAD_DIM]
+                        dQ[z, h, i: i+BLOCK_M, :] = dq                                 # [BLOCK_M, HEAD_DIM]
+                        dK[z, h, j: j+BLOCK_N, :] = dk                                 # [BLOCK_N, HEAD_DIM]
+                        dV[z, h, j: j+BLOCK_N, :] = dv                                 # [BLOCK_N, HEAD_DIM]
 
-        for j in range(0, N_CTX, BLOCK_N):
-            k = K[:, :, j: j+BLOCK_N, :]                                       # [Z, H, BLOCK_N, HEAD_DIM]
-            v = V[:, :, j: j+BLOCK_N, :]                                       # [Z, H, BLOCK_N, HEAD_DIM]
-            dk = dK[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
-            dv = dV[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
-            for i in range(0, N_CTX, BLOCK_M):
-                q  =  Q[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                o  =  O[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                do = dO[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                dq = dQ[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                l  =  L[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
-                m  =  M[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
+        # for j in range(0, N_CTX, BLOCK_N):
+        #     k = K[:, :, j: j+BLOCK_N, :]                                       # [Z, H, BLOCK_N, HEAD_DIM]
+        #     v = V[:, :, j: j+BLOCK_N, :]                                       # [Z, H, BLOCK_N, HEAD_DIM]
+        #     dk = dK[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
+        #     dv = dV[:, :, j: j+BLOCK_N, :]                                     # [Z, H, BLOCK_N, HEAD_DIM]
+        #     for i in range(0, N_CTX, BLOCK_M):
+        #         q  =  Q[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         o  =  O[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         do = dO[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         dq = dQ[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         l  =  L[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
+        #         m  =  M[:, :, i: i+BLOCK_M, :]                                 # [Z, H, BLOCK_M, 1]
 
-                s = torch.matmul(q, k.permute(0, 1, 3, 2)) * sm_scale          # [Z, H, BLOCK_M, BLOCK_N]
-                if causal:
-                    offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
-                    offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
-                    s[:, :, offs_m < offs_n] = torch.finfo(s.dtype).min
-                p = (1.0 / l) * torch.exp(s.float() - m).to(q.dtype)           # [Z, H, BLOCK_M, BLOCK_N]
-                dp = torch.matmul(do, v.permute(0, 1, 3, 2))                   # [Z, H, BLOCK_M, BLOCK_N]
-                d = torch.sum(do * o, dim=-1, keepdim=True)                    # [Z, H, BLOCK_M, 1]
-                ds = p * (dp - d) * sm_scale                                   # [Z, H, BLOCK_M, BLOCK_N]
-                dq = dq + torch.matmul(ds, k)                                  # [Z, H, BLOCK_M, HEAD_DIM]
-                dk = dk + torch.matmul(ds.permute(0, 1, 3, 2), q)              # [Z, H, BLOCK_N, HEAD_DIM]
-                dv = dv + torch.matmul(p.permute(0, 1, 3, 2), do)              # [Z, H, BLOCK_N, HEAD_DIM]
+        #         s = torch.matmul(q, k.permute(0, 1, 3, 2)) * sm_scale          # [Z, H, BLOCK_M, BLOCK_N]
+        #         if causal:
+        #             offs_m = torch.arange(i, i + BLOCK_M, device=Q.device)[:, None]
+        #             offs_n = torch.arange(j, j + BLOCK_N, device=Q.device)[None, :]
+        #             s[:, :, offs_m < offs_n] = torch.finfo(s.dtype).min
+        #         p = (1.0 / l) * torch.exp(s.float() - m).to(q.dtype)           # [Z, H, BLOCK_M, BLOCK_N]
+        #         dp = torch.matmul(do, v.permute(0, 1, 3, 2))                   # [Z, H, BLOCK_M, BLOCK_N]
+        #         d = torch.sum(do * o, dim=-1, keepdim=True)                    # [Z, H, BLOCK_M, 1]
+        #         ds = p * (dp - d) * sm_scale                                   # [Z, H, BLOCK_M, BLOCK_N]
+        #         dq = dq + torch.matmul(ds, k)                                  # [Z, H, BLOCK_M, HEAD_DIM]
+        #         dk = dk + torch.matmul(ds.permute(0, 1, 3, 2), q)              # [Z, H, BLOCK_N, HEAD_DIM]
+        #         dv = dv + torch.matmul(p.permute(0, 1, 3, 2), do)              # [Z, H, BLOCK_N, HEAD_DIM]
 
-                dQ[:, :, i: i+BLOCK_M, :] = dq                                 # [Z, H, BLOCK_M, HEAD_DIM]
-                dK[:, :, j: j+BLOCK_N, :] = dk                                 # [Z, H, BLOCK_N, HEAD_DIM]
-                dV[:, :, j: j+BLOCK_N, :] = dv                                 # [Z, H, BLOCK_N, HEAD_DIM]
+        #         dQ[:, :, i: i+BLOCK_M, :] = dq                                 # [Z, H, BLOCK_M, HEAD_DIM]
+        #         dK[:, :, j: j+BLOCK_N, :] = dk                                 # [Z, H, BLOCK_N, HEAD_DIM]
+        #         dV[:, :, j: j+BLOCK_N, :] = dv                                 # [Z, H, BLOCK_N, HEAD_DIM]
+
         return dQ, dK, dV, None, None, None, None
 
 
@@ -152,10 +157,19 @@ naive_mha_flash_v1 = _naive_mha_flash_v1.apply
 
 
 if __name__ == '__main__':
-    Z = 4
-    H = 8
+    # Z = 1
+    # H = 1
+    # N_CTX = 4
+    # HEAD_DIM = 8
+    # BLOCK_M = 2
+    # BLOCK_N = 2
+
+    Z = 2
+    H = 3
     N_CTX = 1024
     HEAD_DIM = 32
+    BLOCK_M = 128
+    BLOCK_N = 128
 
     dtype_ = [torch.float32, torch.float16]
     for dtype in dtype_:
@@ -176,8 +190,7 @@ if __name__ == '__main__':
             dq, q.grad = q.grad.clone(), None
             dk, k.grad = k.grad.clone(), None
             dv, v.grad = v.grad.clone(), None
-            BLOCK_M = 128
-            BLOCK_N = 128
+
             naive_o = naive_mha_flash_v1(q, k, v, causal, sm_scale, BLOCK_M, BLOCK_N)
             naive_o.backward(dout)
             naive_dq, q.grad = q.grad.clone(), None
