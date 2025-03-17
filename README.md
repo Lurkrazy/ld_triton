@@ -4,9 +4,17 @@ triton ops
 
 ## suport ops
 
+[attention](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/attention_cn.md)
+
+[flash_attention v1 v2](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/attention_flash_cn.md)
+
+[attention](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/attention_cn.md)
+
 [conv2d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
 
 [convolution](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/convolution.md)
+
+[embedding](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/embedding.md)
 
 [flip](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/flip.md)
 
