@@ -2,7 +2,7 @@
 import torch
 
 
-class _naive_mha_flash_v1(torch.autograd.Function):
+class _naive_mha_flash_v2(torch.autograd.Function):
     @staticmethod
     def forward(ctx, Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor, causal, sm_scale, BLOCK_M=128, BLOCK_N=128):
         assert Q.shape[0] == K.shape[0] == V.shape[0], f'q.shape[0]: {Q.shape[0]}, k.shape[0]: {K.shape[0]}, v.shape[0]: {V.shape[0]}'
@@ -155,7 +155,7 @@ class _naive_mha_flash_v1(torch.autograd.Function):
         return dQ, dK, dV, None, None, None, None
 
 
-naive_mha_flash_v1 = _naive_mha_flash_v1.apply
+naive_mha_flash_v2 = _naive_mha_flash_v2.apply
 
 
 if __name__ == '__main__':
@@ -195,7 +195,7 @@ if __name__ == '__main__':
             dk, k.grad = k.grad.clone(), None
             dv, v.grad = v.grad.clone(), None
 
-            naive_o = naive_mha_flash_v1(q, k, v, causal, sm_scale, BLOCK_M, BLOCK_N)
+            naive_o = naive_mha_flash_v2(q, k, v, causal, sm_scale, BLOCK_M, BLOCK_N)
             naive_o.backward(dout)
             naive_dq, q.grad = q.grad.clone(), None
             naive_dk, k.grad = k.grad.clone(), None

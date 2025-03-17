@@ -256,10 +256,19 @@ naive_mha = _naive_mha.apply
 
 
 if __name__ == '__main__':
+    # Z = 1
+    # H = 1
+    # N_CTX = 4
+    # HEAD_DIM = 8
+    # BLOCK_M = 2
+    # BLOCK_N = 2
+
     Z = 2
     H = 3
-    N_CTX = 4
-    HEAD_DIM = 8
+    N_CTX = 1024
+    HEAD_DIM = 32
+    BLOCK_M = 128
+    BLOCK_N = 128
 
     dtype_ = [torch.float32, torch.float16]
     for dtype in dtype_:
