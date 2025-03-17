@@ -23,9 +23,15 @@ class _naive_embedding(torch.autograd.Function):
         input, = ctx.saved_tensors
         shape = ctx.shape
         grad_weight = torch.zeros(shape, device=grad_output.device)
-
+        grad_weight = grad_weight.view(-1, shape[-1])
+        input_shape = input.shape
+        input = input.view(-1)
+        grad_output = grad_output.view(-1, shape[-1])
         for i in range(shape[0]):
             grad_weight[i] += grad_output[input == i].sum(dim=0)
+        grad_weight = grad_weight.view(*shape)
+        input = input.view(*input_shape)
+        grad_output = grad_output.view(*input_shape, shape[-1])
         return None, grad_weight
 
 naive_embedding = _naive_embedding.apply
@@ -35,12 +41,10 @@ if __name__ == '__main__':
     factory_kwargs = {'device': 'cuda'}
     import torch.nn.functional as F
     _input = torch.tensor([[1, 2, 4, 5], [4, 3, 2, 9]], **factory_kwargs)
-    # _input = torch.tensor([[1, 1, 4, 5]], **factory_kwargs)
     _embedding_matrix = torch.rand(10, 3, requires_grad=True, **factory_kwargs)
-    print(f'_embedding_matrix: {_embedding_matrix}')
     _output = F.embedding(_input, _embedding_matrix)
     d_output = torch.randn_like(_output)
-    print(f'd_output: {d_output}')
+
     _output.backward(d_output)
     d_embedding_matrix, _embedding_matrix.grad = _embedding_matrix.grad.clone(), None
 
