@@ -130,7 +130,10 @@ def _single_tensor_naive_sgd(
         # grad = grads[i] if not maximize else -grads[i]
         grad = grads[i]
         if weight_decay != 0:
-            grad = grad.add(param, alpha=weight_decay)
+            if maximize:
+                grad = grad.add(param, alpha=-weight_decay)
+            else:
+                grad = grad.add(param, alpha=weight_decay)
         
         if momentum != 0:
             bb_t = state_bb[i]
@@ -166,7 +169,7 @@ if __name__ == '__main__':
     momentum = 0.1
     dampening = 0.1
     weight_decay = 0.1
-    maximize = False
+    maximize = True
     optim_type = torch.float32
 
     weight = torch.randn(out_features, in_features,  **factory_kwargs)
@@ -218,4 +221,3 @@ if __name__ == '__main__':
         rtol = 1e-2
         atol = 1e-2
         assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'
-
