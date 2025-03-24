@@ -5,19 +5,31 @@ from typing import List, Optional
 from torch.optim.optimizer import Optimizer
 from torch.nn.parameter import Parameter
 import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+
+def deserialize_objects(object_list, object_sizes_tensor, object_tensor, group=None, device=None):
+    offset = 0
+    for i, obj_size in enumerate(object_sizes_tensor):
+        obj_view = object_tensor[offset : offset + obj_size]
+        obj_view = obj_view.type(torch.uint8)
+        offset += obj_size
+        object_list[i] = dist.distributed_c10d._tensor_to_object(obj_view, obj_size, group)
+    return
 
 
 # https://pytorch.org/docs/stable/generated/torch.optim.SGD.html
 class NaiveSGD(Optimizer):
     def __init__(
         self, 
-        params, 
+        params: torch.Tensor, 
         lr: float = 1e-3,
         momentum: float = 0,
         dampening: float = 0,
         weight_decay: float = 0,
         maximize: bool = False,
         optim_type = torch.float32,
+        group=None,
+        device=None
     ):
         if lr < 0.0:
             raise ValueError(f'Invalid learning rate: {lr}')
@@ -34,8 +46,12 @@ class NaiveSGD(Optimizer):
             maximize=maximize,
             optim_type=optim_type,
         )
-
+       
         super(NaiveSGD, self).__init__(params, defaults)
+        self._async = []
+        self._group = group
+        self._device = device
+        self._device_name = 'cpu' if self._device == 'cpu' else 'cuda'
 
 
     def __setstate__(self, state):
@@ -44,41 +60,12 @@ class NaiveSGD(Optimizer):
             group.setdefault('maximize', False)
         print('state:', self.state)
 
-
-    def irecv_object_list(object_list, src, device, group=None):
-        current_device = device
-        object_sizes_tensor = torch.empty(len(object_list), dtype=torch.long, device=current_device)
-
-        # Receive object sizes
-        recv_worker = dist.irecv(object_sizes_tensor, src=src, group=group)
-        
-        recv_worker.wait()
-        # Tensor to receive serialized objects into.
-        object_tensor = torch.empty(  # type: ignore[call-overload]
-            torch.sum(object_sizes_tensor).item(),  # type: ignore[arg-type]
-            dtype=torch.uint8,
-            device=current_device
-        )
-
-        rank_objects = recv(object_tensor, src=src, group=group)
-        assert rank_sizes == rank_objects, "Mismatch in return ranks for object sizes and objects."
-        # Deserialize objects using their stored sizes.
-        offset = 0
-        for i, obj_size in enumerate(object_sizes_tensor):
-            obj_view = object_tensor[offset : offset + obj_size]
-            obj_view = obj_view.type(torch.uint8)
-            offset += obj_size
-            object_list[i] = _tensor_to_object(obj_view, obj_size, group)
-        return rank_objects
-
-
     @torch.no_grad()
     def step(self, closure=None):
-        # world_size = dist.get_world_size()
-        # rank = dist.get_rank()
-        # next_rank = (rank + 1) % world_size
-        # pre_rank = (rank - 1) % world_size
-        # print(f'rank: {rank}, next_rank: {next_rank}, pre_rank: {pre_rank}')
+        world_size = dist.get_world_size()
+        rank = dist.get_rank()
+        next_rank = (rank + 1) % world_size
+        pre_rank = (rank - 1) % world_size
         loss = None
         if closure is not None:
             with torch.enable_grad():
@@ -88,6 +75,7 @@ class NaiveSGD(Optimizer):
             params_with_grad = []
             grads = []
             state_bb = []
+            recv_grads = []
 
             for p in group['params']:
                 if p.grad is None:
@@ -97,12 +85,47 @@ class NaiveSGD(Optimizer):
                 if p.grad.is_sparse:
                     raise RuntimeError('NaiveSGD does not support sparse gradients')
                 grads.append(p.grad)
-
+                recv_grads.append(None)
                 momentum = group['momentum']
 
                 if momentum != 0:
                     state = self.state[p]
                     state_bb.append(state.get('momentum_buffer'))
+
+            for r in range(world_size - 1):
+                # Adapted from recv_object_list and send_object_list
+                current_device = self._device or dist.distributed_c10d._get_pg_default_device(group)
+
+                tensor_list, size_list = zip(*[dist.distributed_c10d._object_to_tensor(obj, current_device, group) for obj in grads])
+                sizes_tensor = torch.cat(size_list)
+
+                if len(tensor_list) == 1:
+                    send_grads_tensor = tensor_list[0]
+                else:
+                    send_grads_tensor = torch.cat(tensor_list)
+
+                recv_grads_tensor = torch.empty(
+                    torch.sum(sizes_tensor).item(),
+                    dtype=torch.uint8,
+                    device=current_device
+                )
+
+                worker = dist.irecv(recv_grads_tensor, src=pre_rank, group=self._group)
+
+                dist.send(send_grads_tensor, dst=next_rank, group=self._group)
+
+                worker.wait()  
+                
+                deserialize_objects(
+                    recv_grads,
+                    sizes_tensor,
+                    recv_grads_tensor,
+                    group=self._group,
+                    device=self._device,
+                )
+
+                for i, grad in enumerate(grads):
+                    grad.add_(recv_grads[i], alpha=1.0).div_(world_size)
 
             naive_sgd(
                 params_with_grad,
@@ -120,12 +143,7 @@ class NaiveSGD(Optimizer):
                 for p, bb_t in zip(params_with_grad, state_bb):
                     state = self.state[p]
                     state['momentum_buffer'] = bb_t
-        
-        for _ in range(world_size - 1):
-            dist.all_reduce(loss)
-            dist.recv_object_list(grads, src=pre_rank)
-            dist.send_object_list(grads, dst=next_rank)
-            
+
         return loss
 
 
@@ -187,15 +205,17 @@ def _single_tensor_naive_sgd(
             param.add_(grad, alpha=-lr)
         
 from torch.nn.parallel import DistributedDataParallel as DDP
-# torchrun --nnodes 1 --nproc_per_node 3 naive_sgd_ringallreduce.py
+# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/optim/sgd/naive_sgd_ringallreduce.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
+    
     world_size = dist.get_world_size()
     rank = dist.get_rank()
+    group = dist.new_group()
     
-    batch = 2
-    in_features = 8
-    out_features = 16
+    batch = 1
+    in_features = 4
+    out_features = 8
     device = f'cpu'
     factory_kwargs = {'device': device, 'dtype': torch.float16}
 
@@ -213,13 +233,13 @@ if __name__ == '__main__':
     weight_decay = 0.1
     maximize = False
     optim_type = torch.float32
+
     if rank == 0:
         weight = torch.randn(out_features, in_features,  **factory_kwargs)
         bias = torch.randn(out_features, **factory_kwargs)
 
         dist.broadcast(weight, 0)
         dist.broadcast(bias, 0)
-
     else:
         weight = torch.empty(out_features, in_features, **factory_kwargs)
         bias = torch.empty(out_features, **factory_kwargs)
@@ -229,21 +249,21 @@ if __name__ == '__main__':
     x = torch.randn(batch, in_features, **factory_kwargs)
     target = torch.randn(batch, out_features, **factory_kwargs)
 
-    # model = Model().to(device)
-    # model.fc.weight = Parameter(weight.clone())
-    # model.fc.bias = Parameter(bias.clone())
-    # loss_fn = torch.nn.CrossEntropyLoss()
-    # optimizer = torch.optim.SGD(
-    #     model.parameters(), 
-    #     lr=lr, 
-    #     momentum=momentum,
-    #     dampening=dampening,
-    #     weight_decay=weight_decay,
-    #     maximize=maximize,
-    # )
-
+    model = Model()
+    model.fc.weight = Parameter(weight.clone())
+    model.fc.bias = Parameter(bias.clone())
+    model = DDP(model)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(
+        model.parameters(), 
+        lr=lr, 
+        momentum=momentum,
+        dampening=dampening,
+        weight_decay=weight_decay,
+        maximize=maximize,
+    )
     
-    naive_model = Model().to(device)
+    naive_model = Model()
     naive_model.fc.weight = Parameter(weight.clone())
     naive_model.fc.bias = Parameter(bias.clone())
     naive_loss_fn = torch.nn.CrossEntropyLoss()
@@ -255,37 +275,28 @@ if __name__ == '__main__':
         weight_decay=weight_decay,
         maximize=maximize,
         optim_type=optim_type,
+        group=group,
+        device=device,
     )
     naive_x = x.clone()
     naive_target = target.clone()
-    world_size = dist.get_world_size()
-    rank = dist.get_rank()
-    next_rank = (rank + 1) % world_size
-    pre_rank = (rank - 1) % world_size
-    print(f'rank: {rank}, next_rank: {next_rank}, pre_rank: {pre_rank}')
-    b = torch.tensor([0, 0])
-    dist.send(b, dst=next_rank)
-    a = torch.tensor([0, 0])
-    dist.recv(a, src=pre_rank)
-    for i in range(20):
-        # y = model(x)
-        # loss = loss_fn(y, target)
-        # loss.backward()
-        # optimizer.step()
-        # optimizer.zero_grad()
+    
+    for i in range(2):
+        y = model(x)
+        loss = loss_fn(y, target)
+        optimizer.zero_grad()
+        loss.backward()
+        a = optimizer.step()
         
-
         naive_y = naive_model(naive_x)
         naive_loss = naive_loss_fn(naive_y, naive_target)
         naive_optimizer.zero_grad()
         naive_loss.backward()
         naive_optimizer.step()
-        
 
         rtol = 1e-2
         atol = 1e-2
 
-        print(f'rank: {rank}, i: {i}, naive_loss: {naive_model.fc.bias}')
-        # assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'
+        assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'
 
     dist.destroy_process_group()
