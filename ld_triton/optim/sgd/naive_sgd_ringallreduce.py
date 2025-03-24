@@ -92,29 +92,31 @@ class NaiveSGD(Optimizer):
                     state = self.state[p]
                     state_bb.append(state.get('momentum_buffer'))
 
+            # Adapted from recv_object_list and send_object_list
+            current_device = self._device or dist.distributed_c10d._get_pg_default_device(group)
+
+            tensor_list, size_list = zip(*[dist.distributed_c10d._object_to_tensor(obj, current_device, group) for obj in grads])
+            sizes_tensor = torch.cat(size_list)
+
+            if len(tensor_list) == 1:
+                send_grads_tensor = tensor_list[0]
+            else:
+                send_grads_tensor = torch.cat(tensor_list)
+
+            recv_grads_tensor = torch.empty(
+                torch.sum(sizes_tensor).item(),
+                dtype=torch.uint8,
+                device=current_device
+            )
+
             for r in range(world_size - 1):
-                # Adapted from recv_object_list and send_object_list
-                current_device = self._device or dist.distributed_c10d._get_pg_default_device(group)
-
-                tensor_list, size_list = zip(*[dist.distributed_c10d._object_to_tensor(obj, current_device, group) for obj in grads])
-                sizes_tensor = torch.cat(size_list)
-
-                if len(tensor_list) == 1:
-                    send_grads_tensor = tensor_list[0]
-                else:
-                    send_grads_tensor = torch.cat(tensor_list)
-
-                recv_grads_tensor = torch.empty(
-                    torch.sum(sizes_tensor).item(),
-                    dtype=torch.uint8,
-                    device=current_device
-                )
-
                 worker = dist.irecv(recv_grads_tensor, src=pre_rank, group=self._group)
 
                 dist.send(send_grads_tensor, dst=next_rank, group=self._group)
 
                 worker.wait()  
+
+                send_grads_tensor = recv_grads_tensor.clone()
                 
                 deserialize_objects(
                     recv_grads,
@@ -125,7 +127,11 @@ class NaiveSGD(Optimizer):
                 )
 
                 for i, grad in enumerate(grads):
-                    grad.add_(recv_grads[i], alpha=1.0).div_(world_size)
+                    acc_grad = grad
+                    grad.add_(recv_grads[i], alpha=1.0)
+                
+            for i, grad in enumerate(grads):
+                grad.div_(world_size)
 
             naive_sgd(
                 params_with_grad,
@@ -235,8 +241,8 @@ if __name__ == '__main__':
     optim_type = torch.float32
 
     if rank == 0:
-        weight = torch.randn(out_features, in_features,  **factory_kwargs)
-        bias = torch.randn(out_features, **factory_kwargs)
+        weight = torch.ones(out_features, in_features,  **factory_kwargs)
+        bias = torch.ones(out_features, **factory_kwargs)
 
         dist.broadcast(weight, 0)
         dist.broadcast(bias, 0)
@@ -281,7 +287,7 @@ if __name__ == '__main__':
     naive_x = x.clone()
     naive_target = target.clone()
     
-    for i in range(2):
+    for i in range(20):
         y = model(x)
         loss = loss_fn(y, target)
         optimizer.zero_grad()
@@ -298,5 +304,4 @@ if __name__ == '__main__':
         atol = 1e-2
 
         assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'
-
     dist.destroy_process_group()
