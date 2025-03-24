@@ -1,15 +1,15 @@
 
 # sgd
 
-$L(θ) = \frac{1}{N}\sum_{i=0}^{N}J(θ;x_{i}, y_{i})$
+$L(θ) = \frac{1}{N}\sum_{i=0}^{N-1}J(θ;x_{i}, y_{i})$
 
-$∇_{θ}L(θ) = \frac{1}{N}\sum_{i=0}^{N}∇_{θ}J(θ;x_{i}, y_{i})$
+$∇_{θ}L(θ) = \frac{1}{N}\sum_{i=0}^{N-1}∇_{θ}J(θ;x_{i}, y_{i})$
 
-$θ=θ–η∇_{θ}L(θ) = θ–\frac{η}{N}\sum_{i=0}^{N}∇_{θ}J(θ;x_{i}, y_{i})$
+$θ=θ–η∇_{θ}L(θ) = θ–\frac{η}{N}\sum_{i=0}^{N-1}∇_{θ}J(θ;x_{i}, y_{i})$
 
 # distributed sgd
 
-$L_{nodes_{i}}(θ) = \frac{1}{N}\sum_{j=0}^{N}J(θ;x_{j}^{nodes_{i}}, y_{j}^{nodes_{i}})$
+$L_{nodes_{i}}(θ) = \frac{1}{N}\sum_{j=0}^{N-1}J(θ;x_{j}^{nodes_{i}}, y_{j}^{nodes_{i}})$
 
 <p>
 $L(θ) = \frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}J(θ;x_{j}, y_{j})$
