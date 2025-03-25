@@ -17,8 +17,7 @@ class NaiveRingAllReduce(torch.nn.Module):
         self.module = module
         self._group = group
         self._world_size = dist.get_world_size()
-        self._rank = dist.get_rank()
-        self.module.register_full_backward_hook(self._module_backward_hook)        
+        self._rank = dist.get_rank()      
         params = list(self.module.parameters())
         if self._rank == 0:
             for p in params:
@@ -26,17 +25,25 @@ class NaiveRingAllReduce(torch.nn.Module):
         else:
             for p in params:
                 dist.broadcast(p, 0)
+        named_modules = list(self.module.named_modules())
+        for name, m in named_modules:
+            m.register_full_backward_hook(self._reduce_backward_hook)
+            m.register_full_backward_pre_hook(self._async_backward_hook)
+        
     def forward(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
     
-    def _module_backward_hook(self, m: torch.nn.Module, grad_input, grad_output):
+    def _async_backward_hook(self, m: torch.nn.Module, grad_output):
+        pass
+    
+    def _reduce_backward_hook(self, m: torch.nn.Module, grad_input, grad_output):
         params = list(m.parameters())
         for p in params:
             # bug https://github.com/pytorch/pytorch/issues/149938
             if p.grad is None:
                 continue
-            dist.all_reduce(p.grad, op=dist.ReduceOp.SUM, group=self._group)
-            p.grad.div_(self._world_size)
+            worker = dist.all_reduce(p.grad.div_(self._world_size), op=dist.ReduceOp.SUM, group=self._group, async_op=True)
+            worker.wait()
 
 
 # torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/ring_allreduce.py
