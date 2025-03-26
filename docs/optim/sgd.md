@@ -48,7 +48,9 @@ $=\frac{1}{N}\sum_{j=0}^{N-1} \frac{\partial J(f(θ;x_{j}^{nodes_{i}},x_{j}^{nod
 
 $\frac{\partial L(f(θ;X,Y))}{\partial θ}$
 
+<p>
 $=\frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial θ}$
+</p>
 
 <p>
 $=\frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ}$
@@ -56,14 +58,6 @@ $=\frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\
 
 <p>
 $=\frac{1}{nodes*N}\sum_{j=0}^{N-1}(\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
-</p>
-
-<p>
-$=\frac{1}{nodes}(\frac{1}{N}\sum_{j=0}^{N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\frac{1}{N}\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
-</p>
-
-<p>
-$=\frac{1}{nodes}(\frac{1}{N}\sum_{j=0}^{N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\frac{1}{N}\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
 </p>
 
 <p>
