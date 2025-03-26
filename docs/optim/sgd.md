@@ -38,7 +38,7 @@ $= \frac{1}{nodes}\sum_{i=0}^{nodes-1}L^{nodes_{i}}(θ;X^{nodes_{i}},Y^{nodes_{i
 
 $∇_{θ}L(θ;X,Y) = \frac{1}{nodes}\sum_{i=0}^{nodes-1}∇_{θ}L^{nodes_{i}}(θ;X^{nodes_{i}},Y^{nodes_{i}})$
 
-# chain rule
+# distributed chain rule
 
 $\frac{\partial L^{nodes_{i}}(f(θ;X^{nodes_{i}},Y^{nodes_{i}}))}{\partial θ}$
 
