@@ -24,9 +24,9 @@ $=\frac{1}{N}\sum_{i=0}^{N-1}\frac{\partial J(f(θ;x_{i}, y_{i}))}{\partial f(θ
 
 $L^{nodes_{i}}(θ;X^{nodes_{i}},Y^{nodes_{i}}) = \frac{1}{N}\sum_{j=0}^{N-1}J(θ;x_{j}^{nodes_{i}}, y_{j}^{nodes_{i}})$
 
-
+<p>
 $L(θ;X,Y) = \frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}J(θ;x_{j}, y_{j})$
-
+</p>
 
 $= \frac{1}{nodes*N}(\sum_{i=0}^{N-1}J(θ;x_{i}, y_{i}) + \sum_{i=N}^{2N-1}J(θ;x_{i}, y_{i}) + ... + \sum_{i=(nodes-1) * N}^{nodes * N-1}J(θ;x_{i}, y_{i}))$
 
@@ -50,19 +50,33 @@ $\frac{\partial L(f(θ;X,Y))}{\partial θ}$
 
 $=\frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial θ}$
 
+<p>
 $=\frac{1}{nodes*N}\sum_{j=0}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ}$
+</p>
 
+<p>
 $=\frac{1}{nodes*N}\sum_{j=0}^{N-1}(\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
+</p>
 
+<p>
 $=\frac{1}{nodes}(\frac{1}{N}\sum_{j=0}^{N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\frac{1}{N}\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
+</p>
 
+<p>
 $=\frac{1}{nodes}(\frac{1}{N}\sum_{j=0}^{N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\frac{1}{N}\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
+</p>
 
+<p>
 $=\frac{1}{nodes}(\frac{1}{N}\sum_{j=0}^{N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ} + ...+\frac{1}{N}\sum_{j=(nodes-1)*N}^{nodes*N-1}\frac{\partial J(f(θ;x_{j}, y_{j}))}{\partial f(θ;x_{j}, y_{j})}\frac{\partial f(θ;x_{j}, y_{j})}{\partial θ})$
+</p>
 
+<p>
 $=\frac{1}{nodes}(\frac{\partial L^{nodes_{0}}(f(θ;X^{nodes_{0}},Y^{nodes_{0}}))}{\partial θ} + ...+\frac{\partial L^{nodes-1}(f(θ;X^{nodes-1},Y^{nodes-1}))}{\partial θ})$
+</p>
 
+<p>
 $=\frac{1}{nodes}(\frac{\partial L^{nodes_{0}}(f(θ;X^{nodes_{0}},Y^{nodes_{0}}))}{\partial θ} + ...+\frac{\partial L^{nodes-1}(f(θ;X^{nodes-1},Y^{nodes-1}))}{\partial θ})$
+</p>
 
 # AllReduce
 
