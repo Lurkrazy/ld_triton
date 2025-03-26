@@ -5,7 +5,7 @@ from torch.optim.optimizer import Optimizer
 from torch.nn.parameter import Parameter
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-
+from collections import deque
 
 class NaiveRingAllReduce(torch.nn.Module):
     def __init__(
@@ -29,12 +29,15 @@ class NaiveRingAllReduce(torch.nn.Module):
         for name, m in named_modules:
             m.register_full_backward_hook(self._reduce_backward_hook)
             m.register_full_backward_pre_hook(self._async_backward_hook)
-        
+        self._deque = deque()
+
     def forward(self, *inputs, **kwargs):
         return self.module(*inputs, **kwargs)
     
     def _async_backward_hook(self, m: torch.nn.Module, grad_output):
-        pass
+        while len(self._deque) > 0:
+            worker = self._deque.popleft()
+            worker.wait()
     
     def _reduce_backward_hook(self, m: torch.nn.Module, grad_input, grad_output):
         params = list(m.parameters())
@@ -43,8 +46,8 @@ class NaiveRingAllReduce(torch.nn.Module):
             if p.grad is None:
                 continue
             worker = dist.all_reduce(p.grad.div_(self._world_size), op=dist.ReduceOp.SUM, group=self._group, async_op=True)
+            self._deque.append(worker)
             worker.wait()
-
 
 # torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/ring_allreduce.py
 if __name__ == '__main__':
@@ -142,7 +145,6 @@ if __name__ == '__main__':
         atol = 1e-2
 
         assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), \
-                              f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}' \
-                              f'x: {x}, naive_x: {naive_x}'
+                              f'i: {i}, rank:{rank}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'
 
     dist.destroy_process_group()
