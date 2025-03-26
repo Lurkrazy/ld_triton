@@ -68,10 +68,6 @@ $=\frac{1}{nodes}(\frac{1}{N}\sum_{j=0}^{N-1}\frac{\partial J(f(θ;x_{j}, y_{j})
 $=\frac{1}{nodes}(\frac{\partial L^{nodes_{0}}(f(θ;X^{nodes_{0}},Y^{nodes_{0}}))}{\partial θ} + ...+\frac{\partial L^{nodes-1}(f(θ;X^{nodes-1},Y^{nodes-1}))}{\partial θ})$
 </p>
 
-<p>
-$=\frac{1}{nodes}(\frac{\partial L^{nodes_{0}}(f(θ;X^{nodes_{0}},Y^{nodes_{0}}))}{\partial θ} + ...+\frac{\partial L^{nodes-1}(f(θ;X^{nodes-1},Y^{nodes-1}))}{\partial θ})$
-</p>
-
 # AllReduce
 
 # References
