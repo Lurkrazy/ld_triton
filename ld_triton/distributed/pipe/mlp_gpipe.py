@@ -148,8 +148,10 @@ class GPipeMLPTrain():
         device=None,
         dtype=None,
         group=None,
+        debug=False,
     ):  
         super().__init__()
+        self._debug = debug
         self._micro_batch_size = micro_batch_size
         self._num_micro_batches = num_micro_batches
         self._mini_batch_size = micro_batch_size * num_micro_batches
@@ -159,43 +161,75 @@ class GPipeMLPTrain():
         self._device = device
         self._dtype = dtype
         self.pipe_buffers = {
-            'input': [None for _ in range(self._num_micro_batches)],
-            'outputs': [None for _ in range(self._num_micro_batches)],
+            'inputs': [None for _ in range(self._num_micro_batches)],
+            'grad_outputs': [None for _ in range(self._num_micro_batches)],
+            'debug_outputs': [None for _ in range(self._num_micro_batches)],
         }
+        self.init_pipe_buffers()
         self.num_stages = world_size
         self.model = NaivePipeMLP(
             sizes,
             activations,
             rank,
             world_size,
-            device='cpu',
-            dtype=torch.float32,
+            device=self._device,
+            dtype=self._dtype,
             group=group
         )
 
         if rank == world_size - 1:
             self.loss_fn = torch.nn.MSELoss()
-            self.single_mlp = SingleMLP(sizes, activations, device='cpu', dtype=torch.float32)
-            self.single_loss_fn = torch.nn.MSELoss()
+            if self._debug:
+                self.single_mlp = SingleMLP(sizes, activations, device=self._device, dtype=self._dtype)
+                self.single_loss_fn = torch.nn.MSELoss()
 
-    def forward(self, x: torch.Tensor):
+    def init_pipe_buffers(self):
+        for micro_batch_id in range(self._num_micro_batches):
+            self.pipe_buffers['inputs'][micro_batch_id] = torch.empty(
+                self._micro_batch_size, 
+                sizes[self._rank][0], 
+                device=self._device, 
+                dtype=self._dtype, 
+                requires_grad=True
+            )
+
+            self.pipe_buffers['grad_outputs'][micro_batch_id] = torch.empty(
+                self._micro_batch_size, 
+                sizes[self._rank][-1], 
+                device=self._device, 
+                dtype=self._dtype, 
+                requires_grad=True
+            )
+    
+    def first_stage_forward(self, x: torch.Tensor):
         assert x.shape[0] % self._num_micro_batches == 0, f'Batch size {x.shape[0]} must be divisible by {self._num_micro_batches}'
         assert x.shape[0] == self._mini_batch_size, f'Batch size {x.shape[0]} must be equal to {self._mini_batch_size}'
         for micro_batch_id in range(self._num_micro_batches):
             micro_input = x[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size]
-            self.pipe_buffers['input'][micro_batch_id] = micro_input.clone()
+            self.pipe_buffers['inputs'][micro_batch_id] = micro_input.clone()
             # recompute
             with torch.no_grad():
-                micro_output = self.model(self.pipe_buffers['input'][micro_batch_id])
-            self.pipe_buffers['outputs'][micro_batch_id] = micro_output
-            
+                micro_output = self.model(self.pipe_buffers['inputs'][micro_batch_id])
+            if self._debug:
+                self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
 
-    def backward_and_update(self, grad_output: torch.Tensor):
+    def forward(self):
+        for micro_batch_id in range(self._num_micro_batches):
+            micro_input = self.pipe_buffers['inputs'][micro_batch_id]
+            # recompute
+            with torch.no_grad():
+                micro_output = self.model(micro_input)
+            if self._debug:
+                self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
+
+    def backward_and_update(self):
         for micro_batch_id in range(self._num_micro_batches, 0, -1):
             micro_batch_id -= 1
-            micro_input = self.pipe_buffers['input'][micro_batch_id].requires_grad_()
+            micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
+            # recompute
             micro_output = self.model(micro_input)
-            micro_grad_output = grad_output[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size]
+            micro_grad_output = self.pipe_buffers['grad_outputs'][micro_batch_id]
+
             self.model.zero_grad()
             self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
             micro_output.backward(micro_grad_output)
@@ -205,7 +239,7 @@ class GPipeMLPTrain():
         for micro_batch_id in range(self._num_micro_batches-1, -1, -1):
             optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
             # recompute
-            micro_input = self.pipe_buffers['input'][micro_batch_id]
+            micro_input = self.pipe_buffers['inputs'][micro_batch_id]
             micro_output = self.model(micro_input)
             micro_target = target[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size].clone()
             micro_loss = self.loss_fn(micro_output, micro_target)
@@ -216,43 +250,40 @@ class GPipeMLPTrain():
     def train(self):
         step = 2
         for i in range(step):
-            if self._rank == 0:
-                x = torch.randn(self._mini_batch_size, sizes[self._rank][0], device='cpu', dtype=torch.float32, requires_grad=True)
-                single_x = x.clone()
-                dist.broadcast(single_x, src=0, group=self._group)
-            else:
-                x = torch.empty(self._mini_batch_size, sizes[self._rank][0], device='cpu', dtype=torch.float32, requires_grad=True)
-                single_x = torch.empty(self._mini_batch_size, sizes[0][0], device='cpu', dtype=torch.float32, requires_grad=True)
-                dist.broadcast(single_x, src=0, group=self._group)
-            
             self.model.zero_grad()
-
+            # forward
+            if self._rank == 0:
+                x = torch.randn(self._mini_batch_size, sizes[self._rank][0], device=self._device, dtype=self._dtype, requires_grad=True)
+                if self._debug:
+                    single_x = x.clone()
+                    dist.broadcast(single_x, src=0, group=self._group)
+                self.first_stage_forward(x)
+            else:
+                if self._debug:
+                    single_x = torch.empty(self._mini_batch_size, sizes[0][0], device=self._device, dtype=self._dtype, requires_grad=True)
+                    dist.broadcast(single_x, src=0, group=self._group)
+                self.forward()
+            
+            # backward
             if rank == world_size - 1:
-                target = torch.ones(self._mini_batch_size, sizes[rank][-1], device='cpu', dtype=torch.float32, requires_grad=True)
-                self.forward(x)
+                target = torch.ones(self._mini_batch_size, sizes[rank][-1], device=self._device, dtype=self._dtype, requires_grad=True)
                 self.last_stage_backward_and_update(target)
 
-                single_target = target.clone()
-                single_output = self.single_mlp(single_x)
-                single_loss = self.single_loss_fn(single_output, single_target)
-                self.single_mlp.zero_grad()
-                single_optimizer = torch.optim.SGD(self.single_mlp.parameters(), lr=0.1)
-                single_loss.backward()
-                single_optimizer.step()
-                
-                output = torch.cat(self.pipe_buffers['outputs'])
-                print(f'single_mlp_out, Rank: {self._rank}, single_output: {single_output}')
-                print(f'gpipe_mlp_out, Rank: {self._rank}, output: {output}')
-                # assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
+                if self._debug:
+                    single_target = target.clone()
+                    single_output = self.single_mlp(single_x)
+                    single_loss = self.single_loss_fn(single_output, single_target)
+                    self.single_mlp.zero_grad()
+                    single_optimizer = torch.optim.SGD(self.single_mlp.parameters(), lr=0.1)
+                    single_loss.backward()
+                    single_optimizer.step()
+                    output = torch.cat(self.pipe_buffers['debug_outputs'], dim=0)
+                    print(f'single_mlp_out, Rank: {self._rank}, single_output: {single_output}')
+                    print(f'gpipe_mlp_out, Rank: {self._rank}, output: {output}')
+                    # assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
             else:
+                self.backward_and_update()
 
-                grad_output = torch.empty(self._mini_batch_size, sizes[rank][-1], device='cpu', dtype=torch.float32, requires_grad=True)
-                self.forward(x)
-                self.backward_and_update(grad_output)
-
-
-
-    
 
 # torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/pipe/mlp_gpipe.py
 if __name__ == '__main__':
@@ -266,6 +297,8 @@ if __name__ == '__main__':
 
     _micro_batch_size = 2
     _num_micro_batches = 2
+    _debug = True
+    # _debug = False
     
     train = GPipeMLPTrain(
         sizes,
@@ -275,8 +308,10 @@ if __name__ == '__main__':
         rank,
         world_size,
         device='cpu',
+        # dtype=torch.float64,
         dtype=torch.float32,
-        group=group
+        group=group,
+        debug=_debug,
     )
     train.train()
 

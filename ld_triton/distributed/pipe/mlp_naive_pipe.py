@@ -135,62 +135,168 @@ class SingleMLP(nn.Module):
         return self.layers(x)
     
 
-# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/pipe/test_mlp_naive_pipe.py
+class NaivePipeMLPTrain():
+    def __init__(
+        self,
+        sizes: list[list[int]],
+        activations: list[str],
+        batch_size,
+        rank: int,
+        world_size: int,
+        device=None,
+        dtype=None,
+        group=None,
+        debug=False,
+    ):  
+        super().__init__()
+        self._debug = debug
+        self._batch_size = batch_size
+        self._group = group
+        self._rank = rank
+        self._world_size = world_size
+        self._device = device
+        self._dtype = dtype
+        self.pipe_buffers = {
+            'inputs': [None],
+            'grad_outputs': [None],
+            'debug_outputs': [None],
+        }
+        self.init_pipe_buffers()
+        self.num_stages = world_size
+        self.model = NaivePipeMLP(
+            sizes,
+            activations,
+            rank,
+            world_size,
+            device=self._device,
+            dtype=self._dtype,
+            group=group
+        )
+
+        if rank == world_size - 1:
+            self.loss_fn = torch.nn.MSELoss()
+            if self._debug:
+                self.single_mlp = SingleMLP(sizes, activations, device=self._device, dtype=self._dtype)
+                self.single_loss_fn = torch.nn.MSELoss()
+
+    def init_pipe_buffers(self):
+        self.pipe_buffers['inputs'][0] = torch.empty(
+            self._batch_size, 
+            sizes[self._rank][0], 
+            device=self._device, 
+            dtype=self._dtype, 
+            requires_grad=True
+        )
+
+        self.pipe_buffers['grad_outputs'][0] = torch.empty(
+            self._batch_size, 
+            sizes[self._rank][-1], 
+            device=self._device, 
+            dtype=self._dtype, 
+            requires_grad=True
+        )
+    
+    def first_stage_forward(self, x: torch.Tensor):
+        self.pipe_buffers['inputs'][0] = x.clone()
+        # recompute
+        with torch.no_grad():
+            output = self.model(self.pipe_buffers['inputs'][0])
+        if self._debug:
+            self.pipe_buffers['debug_outputs'][0] = output
+
+    def forward(self):
+        input = self.pipe_buffers['inputs'][0]
+        # recompute
+        with torch.no_grad():
+            output = self.model(input)
+        if self._debug:
+            self.pipe_buffers['debug_outputs'][0] = output
+
+    def backward_and_update(self):
+        input = self.pipe_buffers['inputs'][0].requires_grad_()
+        # recompute
+        output = self.model(input)
+        grad_output = self.pipe_buffers['grad_outputs'][0]
+
+        self.model.zero_grad()
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
+        output.backward(grad_output)
+        self.optimizer.step()
+    
+    def last_stage_backward_and_update(self, target: torch.Tensor):
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
+        # recompute
+        input = self.pipe_buffers['inputs'][0]
+        output = self.model(input)
+        loss = self.loss_fn(output, target)
+        self.model.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    def train(self):
+        step = 20
+        for i in range(step):
+            self.model.zero_grad()
+            # forward
+            if self._rank == 0:
+                x = torch.randn(self._batch_size, sizes[self._rank][0], device=self._device, dtype=self._dtype, requires_grad=True)
+                if self._debug:
+                    single_x = x.clone()
+                    dist.broadcast(single_x, src=0, group=self._group)
+                self.first_stage_forward(x)
+            else:
+                if self._debug:
+                    single_x = torch.empty(self._batch_size, sizes[0][0], device=self._device, dtype=self._dtype, requires_grad=True)
+                    dist.broadcast(single_x, src=0, group=self._group)
+                self.forward()
+            
+            # backward
+            if rank == world_size - 1:
+                target = torch.ones(self._batch_size, sizes[rank][-1], device=self._device, dtype=self._dtype, requires_grad=True)
+                self.last_stage_backward_and_update(target)
+
+                if self._debug:
+                    single_target = target.clone()
+                    single_output = self.single_mlp(single_x)
+                    single_loss = self.single_loss_fn(single_output, single_target)
+                    self.single_mlp.zero_grad()
+                    single_optimizer = torch.optim.SGD(self.single_mlp.parameters(), lr=0.1)
+                    single_loss.backward()
+                    single_optimizer.step()
+                    output = torch.cat(self.pipe_buffers['debug_outputs'], dim=0)
+                    print(f'single_mlp_out, Rank: {self._rank}, single_output: {single_output}')
+                    print(f'pipe_mlp_out, Rank: {self._rank}, output: {output}')
+                    assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
+            else:
+                self.backward_and_update()
+
+
+# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/pipe/mlp_naive_pipe.py
 if __name__ == '__main__':
-    import time
     dist.init_process_group(backend='gloo')
-    batch_size = 2
-    step = 10
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     group = dist.new_group()
-    sizes = [[4, 8, 8], [8, 8, 16], [16, 16, 4]]
+    # sizes = [[4, 8, 8], [8, 8, 16], [16, 16, 4]]
+    sizes = [[2, 2], [2, 2], [2, 2]]
     activations = [['relu', 'relu'], ['relu', 'relu'], ['relu', 'softmax']]
-    model = NaivePipeMLP(
+
+    batch_size = 2
+    _debug = True
+    # _debug = False
+    
+    train = NaivePipeMLPTrain(
         sizes,
         activations,
+        batch_size,
         rank,
         world_size,
         device='cpu',
+        # dtype=torch.float64,
         dtype=torch.float32,
-        group=group
+        group=group,
+        debug=_debug,
     )
+    train.train()
 
-    if rank == world_size - 1:
-        loss_fn = torch.nn.CrossEntropyLoss()
-
-        single_mlp = SingleMLP(sizes, activations, device='cpu', dtype=torch.float32)
-        single_loss_fn = torch.nn.CrossEntropyLoss()
-
-    for i in range(step):
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-        if rank == 0:
-            x = torch.randn(batch_size, sizes[rank][0], device='cpu', dtype=torch.float32, requires_grad=True)
-            single_x = x.clone()
-            dist.broadcast(single_x, src=0, group=group)
-        else:
-            x = torch.empty(batch_size, sizes[rank][0], device='cpu', dtype=torch.float32, requires_grad=True)
-            single_x = torch.empty(batch_size, sizes[0][0], device='cpu', dtype=torch.float32, requires_grad=True)
-            dist.broadcast(single_x, src=0, group=group)
-        model.zero_grad()
-        if rank == world_size - 1:
-            target = torch.randn(batch_size, sizes[rank][-1], device='cpu', dtype=torch.float32, requires_grad=True)
-            output = model(x)
-            loss = loss_fn(output, target)
-            loss.backward()
-            single_target = target.clone()
-            single_output = single_mlp(single_x)
-            single_loss = single_loss_fn(single_output, single_target)
-            single_mlp.zero_grad()
-            single_optimizer = torch.optim.SGD(single_mlp.parameters(), lr=0.1)
-            single_loss.backward()
-            single_optimizer.step()
-            print(f'Rank: {rank}, output: {output}, single_output: {single_output}')
-            assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
-        else:
-            grad_output = torch.empty(batch_size, sizes[rank][-1], device='cpu', dtype=torch.float32, requires_grad=True)
-            output = model(x)
-            output.backward(grad_output)
-
-        optimizer.step()
     dist.destroy_process_group()
