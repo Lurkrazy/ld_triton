@@ -24,7 +24,8 @@ class _naive_linear(torch.autograd.Function):
             if weight.grad is None:
                 weight.grad = torch.zeros_like(weight)
             grad_weight = torch.matmul(grad_output.t(), input)
-            weight.grad += grad_weight
+            weight.grad.add_(grad_weight)
+
         if bias is not None and bias.requires_grad:
             if bias.grad is None:
                 bias.grad = torch.zeros_like(bias)
@@ -46,12 +47,11 @@ class LDLinear(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = Parameter(torch.ones((out_features, in_features), **factory_kwargs) * 0.1)
+        self.weight = Parameter(torch.ones((out_features, in_features), **factory_kwargs) * 0.5)
         if bias:
-            self.bias = Parameter(torch.zeros(out_features, **factory_kwargs) * 0.1)
+            self.bias = Parameter(torch.ones(out_features, **factory_kwargs) * 0.5)
         else:
             self.register_parameter('bias', None)
-
 
     def forward(self, input):
         return _naive_linear.apply(input, self.weight, self.bias)
@@ -83,7 +83,6 @@ class NaivePipeMLP(nn.Module):
         self.layers = nn.Sequential(
             *[nn.Sequential(
                 LDLinear(node_sizes[i], node_sizes[i+1], bias=False, **factory_kwargs),
-                nn.LeakyReLU() if node_activations[i] == 'relu' else nn.LeakyReLU()
              ) 
             for i in range(len(node_sizes) - 1)]
         )
@@ -133,7 +132,6 @@ class SingleMLP(nn.Module):
                 *[nn.Sequential(
                     *[nn.Sequential(
                         LDLinear(node_sizes[i], node_sizes[i+1], bias=False, **factory_kwargs),
-                        nn.LeakyReLU() if node_activations[i] == 'relu' else nn.LeakyReLU()
                     )
                     for i in range(len(node_sizes) - 1)]) 
                 for (node_sizes, node_activations) in zip(sizes, activations)])
@@ -238,6 +236,8 @@ class GPipeMLPTrain():
             micro_output = self.model(micro_input)
             micro_grad_output = self.pipe_buffers['grad_outputs'][micro_batch_id]
             micro_output.backward(micro_grad_output)
+        for name, p in self.model.named_parameters():
+            p.grad.div_(self._num_micro_batches)
         self.optimizer.step()
     
     def last_stage_backward_and_update(self, target: torch.Tensor):
@@ -250,10 +250,12 @@ class GPipeMLPTrain():
             micro_target = target[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size].clone()
             micro_loss = self.loss_fn(micro_output, micro_target)
             micro_loss.backward()
+        for name, p in self.model.named_parameters():
+            p.grad.div_(self._num_micro_batches)
         optimizer.step()
 
     def train(self):
-        step = 10
+        step = 100
         for i in range(step):
             self.model.zero_grad()
             # forward
@@ -283,8 +285,9 @@ class GPipeMLPTrain():
                     single_loss.backward()
                     single_optimizer.step()
                     output = torch.cat(self.pipe_buffers['debug_outputs'], dim=0)
-                    # print(f'single_mlp_out, Rank: {self._rank}, single_output: {single_output}')
-                    # print(f'gpipe_mlp_out, Rank: {self._rank}, output: {output}')
+
+                    print(f'single_output, Rank: {self._rank}, single_output: {single_output}')
+                    print(f'output, Rank: {self._rank}, output: {output}')
                     assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
             else:
                 self.backward_and_update()
