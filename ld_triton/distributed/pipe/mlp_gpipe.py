@@ -21,10 +21,16 @@ class _naive_linear(torch.autograd.Function):
         if input.requires_grad:
             grad_input = torch.matmul(grad_output, weight)
         if weight.requires_grad:
+            if weight.grad is None:
+                weight.grad = torch.zeros_like(weight)
             grad_weight = torch.matmul(grad_output.t(), input)
+            weight.grad += grad_weight
         if bias is not None and bias.requires_grad:
+            if bias.grad is None:
+                bias.grad = torch.zeros_like(bias)
             grad_bias = grad_output.sum(0, keepdim=False)
-        return grad_input, grad_weight, grad_bias
+            bias.grad += grad_bias
+        return grad_input, None, None
 
 
 class LDLinear(nn.Module):
@@ -81,7 +87,7 @@ class NaivePipeMLP(nn.Module):
              ) 
             for i in range(len(node_sizes) - 1)]
         )
-
+        
         self.layers.register_forward_hook(self._forward_hook)
         self.layers.register_forward_pre_hook(self._forward_pre_hook)
         self.layers.register_full_backward_pre_hook(self._backward_pre_hook)
@@ -223,32 +229,31 @@ class GPipeMLPTrain():
                 self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
 
     def backward_and_update(self):
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
+        self.model.zero_grad()
         for micro_batch_id in range(self._num_micro_batches, 0, -1):
             micro_batch_id -= 1
             micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
             # recompute
             micro_output = self.model(micro_input)
             micro_grad_output = self.pipe_buffers['grad_outputs'][micro_batch_id]
-
-            self.model.zero_grad()
-            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
             micro_output.backward(micro_grad_output)
-            self.optimizer.step()
+        self.optimizer.step()
     
     def last_stage_backward_and_update(self, target: torch.Tensor):
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
+        self.model.zero_grad()
         for micro_batch_id in range(self._num_micro_batches-1, -1, -1):
-            optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
             # recompute
             micro_input = self.pipe_buffers['inputs'][micro_batch_id]
             micro_output = self.model(micro_input)
             micro_target = target[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size].clone()
             micro_loss = self.loss_fn(micro_output, micro_target)
-            self.model.zero_grad()
             micro_loss.backward()
-            optimizer.step()
+        optimizer.step()
 
     def train(self):
-        step = 2
+        step = 10
         for i in range(step):
             self.model.zero_grad()
             # forward
@@ -278,22 +283,22 @@ class GPipeMLPTrain():
                     single_loss.backward()
                     single_optimizer.step()
                     output = torch.cat(self.pipe_buffers['debug_outputs'], dim=0)
-                    print(f'single_mlp_out, Rank: {self._rank}, single_output: {single_output}')
-                    print(f'gpipe_mlp_out, Rank: {self._rank}, output: {output}')
-                    # assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
+                    # print(f'single_mlp_out, Rank: {self._rank}, single_output: {single_output}')
+                    # print(f'gpipe_mlp_out, Rank: {self._rank}, output: {output}')
+                    assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
             else:
                 self.backward_and_update()
 
 
-# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/pipe/mlp_gpipe.py
+# torchrun --nnodes 1 --nproc_per_node 4 ld_triton/distributed/continuous_pipe/mlp_gpipe.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     group = dist.new_group()
     # sizes = [[4, 8, 8], [8, 8, 16], [16, 16, 4]]
-    sizes = [[2, 2], [2, 2], [2, 2]]
-    activations = [['relu', 'relu'], ['relu', 'relu'], ['relu', 'softmax']]
+    sizes = [[2, 2], [2, 2], [2, 2], [2, 2]]
+    activations = [['relu', 'relu'], ['relu', 'relu'], ['relu', 'relu'], ['relu', 'softmax']]
 
     _micro_batch_size = 2
     _num_micro_batches = 2
