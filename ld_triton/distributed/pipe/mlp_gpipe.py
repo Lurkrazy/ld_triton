@@ -57,6 +57,59 @@ class LDLinear(nn.Module):
         return _naive_linear.apply(input, self.weight, self.bias)
 
 
+class GPipe(nn.Module):
+    def __init__(self, module, stage_id: int, num_stage: int, group=None):
+        super().__init__()
+        self.module = module
+        self._stage_id = stage_id
+        self._num_stage = num_stage
+        self._group = group
+        self.register_forward_hook(self._forward_hook)
+        self.register_forward_pre_hook(self._forward_pre_hook)
+        self.register_full_backward_pre_hook(self._backward_pre_hook)
+        self.register_full_backward_hook(self._backward_hook)
+
+    def _forward_pre_hook(self, module, input):
+        if self._stage_id != 0:
+            recv_ops = []
+            for x in input:
+                recv_op = dist.P2POp(dist.irecv, x, self._stage_id - 1, group=self._group)
+                recv_ops.append(recv_op)
+            reqs = dist.batch_isend_irecv(recv_ops)
+            for req in reqs:
+                req.wait()
+
+    def _forward_hook(self, module, input, output):
+        if self._stage_id != self._num_stage - 1:
+            send_op = dist.P2POp(dist.isend, output, self._stage_id + 1, group=self._group)
+            reqs = dist.batch_isend_irecv([send_op])
+            for req in reqs:
+                req.wait()
+
+    def _backward_pre_hook(self, module, grad_output):
+        if self._stage_id != self._num_stage - 1:
+            recv_ops = []
+            for x in grad_output:
+                recv_op = dist.P2POp(dist.irecv, x, self._stage_id + 1, group=self._group)
+                recv_ops.append(recv_op)
+            reqs = dist.batch_isend_irecv(recv_ops)
+            for req in reqs:
+                req.wait()
+
+    def _backward_hook(self, module, grad_input, grad_output):
+        if self._stage_id != 0:
+            send_ops = []
+            for x in grad_input:
+                send_op = dist.P2POp(dist.isend, x, self._stage_id - 1, group=self._group)
+                send_ops.append(send_op)
+            reqs = dist.batch_isend_irecv(send_ops)
+            for req in reqs:
+                req.wait()
+
+    def forward(self, x):
+        return self.module(x)
+
+
 class NaivePipeMLP(nn.Module):
     def __init__(
         self, 
@@ -87,48 +140,6 @@ class NaivePipeMLP(nn.Module):
             for i in range(len(node_sizes) - 1)]
         )
         
-        self.register_forward_hook(self._forward_hook)
-        self.register_forward_pre_hook(self._forward_pre_hook)
-        self.register_full_backward_pre_hook(self._backward_pre_hook)
-        self.register_full_backward_hook(self._backward_hook)
-
-    def _forward_pre_hook(self, module, input):
-        if self._rank != 0:
-            recv_ops = []
-            for x in input:
-                recv_op = dist.P2POp(dist.irecv, x, self._rank - 1, group=self._group)
-                recv_ops.append(recv_op)
-            reqs = dist.batch_isend_irecv(recv_ops)
-            for req in reqs:
-                req.wait()
-
-    def _forward_hook(self, module, input, output):
-        if self._rank != self._world_size - 1:
-            send_op = dist.P2POp(dist.isend, output, self._rank + 1, group=self._group)
-            reqs = dist.batch_isend_irecv([send_op])
-            for req in reqs:
-                req.wait()
-
-    def _backward_pre_hook(self, module, grad_output):
-        if self._rank != self._world_size - 1:
-            recv_ops = []
-            for x in grad_output:
-                recv_op = dist.P2POp(dist.irecv, x, self._rank + 1, group=self._group)
-                recv_ops.append(recv_op)
-            reqs = dist.batch_isend_irecv(recv_ops)
-            for req in reqs:
-                req.wait()
-
-    def _backward_hook(self, module, grad_input, grad_output):
-        if self._rank != 0:
-            send_ops = []
-            for x in grad_input:
-                send_op = dist.P2POp(dist.isend, x, self._rank - 1, group=self._group)
-                send_ops.append(send_op)
-            reqs = dist.batch_isend_irecv(send_ops)
-            for req in reqs:
-                req.wait()
-
     def forward(self, x):
         return self.layers(x)
 
@@ -199,6 +210,8 @@ class GPipeMLPTrain():
             group=group
         )
 
+        self.model = GPipe(self.model, rank, world_size, group=group)
+
         if rank == world_size - 1:
             self.loss_fn = torch.nn.MSELoss()
             if self._debug:
@@ -267,10 +280,6 @@ class GPipeMLPTrain():
         print(f'valid compute: {valid_compute}')
         print(f'bubble numbers: {total_compute - valid_compute}')
         print(f'bubble ratio: {(total_compute - valid_compute) / total_compute:.2%}')
-
-    def micro_step(self, micro_step_id):
-        stage_id = self._rank
-        micro_batch_id, step_type = self._clock_cycles(self.num_stages, self._num_micro_batches, stage_id, micro_step_id)
 
     def train(self):
         if self._rank == self._world_size - 1 and self._debug:
