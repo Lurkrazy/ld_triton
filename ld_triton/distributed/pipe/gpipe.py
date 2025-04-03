@@ -205,8 +205,9 @@ class GPipe(nn.Module):
                     # recompute
                     micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
                     micro_output = self._model(micro_input)
-                    micro_grad_output = self.pipe_buffers['grad_outputs'][0]
-                    micro_output.backward(micro_grad_output)
+                    micro_grad_output = self.pipe_buffers['grad_outputs']
+                    for grad_output in micro_grad_output:
+                        micro_output.backward(grad_output)
 
             elif step_type == 'bubble':
                 pass
