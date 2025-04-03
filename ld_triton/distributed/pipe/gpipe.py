@@ -199,7 +199,7 @@ class GPipe(nn.Module):
                     micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
                     micro_output = self._model(micro_input)
                     micro_target = target[micro_batch_id].clone()
-                    micro_loss = self._loss_fn(micro_output, micro_target)
+                    micro_loss = self._loss_fn(micro_output, micro_target) / self._num_micro_batch
                     micro_loss.backward()
                 else:
                     # recompute
@@ -212,8 +212,6 @@ class GPipe(nn.Module):
             elif step_type == 'bubble':
                 pass
 
-        for name, p in self._model.named_parameters():
-            p.grad.div_(self._num_micro_batch)
         optimizer.step()
 
 # torchrun --nproc_per_node 4 --nnodes 1 ld_triton/distributed/pipe/gpipe.py
@@ -239,17 +237,11 @@ if __name__ == '__main__':
             if input.requires_grad:
                 grad_input = torch.matmul(grad_output, weight)
             if weight.requires_grad:
-                if weight.grad is None:
-                    weight.grad = torch.zeros_like(weight)
                 grad_weight = torch.matmul(grad_output.t(), input)
-                weight.grad.add_(grad_weight)
 
             if bias is not None and bias.requires_grad:
-                if bias.grad is None:
-                    bias.grad = torch.zeros_like(bias)
                 grad_bias = grad_output.sum(0, keepdim=False)
-                bias.grad.add_(grad_bias)
-            return grad_input, None, None
+            return grad_input, grad_weight, grad_bias
 
     class LDLinear(nn.Module):
         def __init__(
@@ -345,7 +337,7 @@ if __name__ == '__main__':
     GBS = 32
     MBS = 4
     _debug = True
-    _debug = False
+    # _debug = False
 
     model = NaivePipeMLP(
         size=size,
