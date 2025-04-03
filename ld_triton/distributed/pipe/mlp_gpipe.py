@@ -184,7 +184,7 @@ class GPipeMLPTrain():
         self._dtype = dtype
         self.pipe_buffers = {
             'inputs': [None for _ in range(self._num_micro_batches)],
-            'grad_outputs': [None for _ in range(self._num_micro_batches)],
+            'grad_outputs': [None],
             'debug_outputs': [None for _ in range(self._num_micro_batches)],
         }
         self.init_pipe_buffers()
@@ -215,100 +215,140 @@ class GPipeMLPTrain():
                 requires_grad=True
             )
 
-            self.pipe_buffers['grad_outputs'][micro_batch_id] = torch.empty(
-                self._micro_batch_size, 
-                sizes[self._rank][-1], 
-                device=self._device, 
-                dtype=self._dtype, 
-                requires_grad=True
-            )
+        self.pipe_buffers['grad_outputs'][0] = torch.empty(
+            self._micro_batch_size, 
+            sizes[self._rank][-1], 
+            device=self._device, 
+            dtype=self._dtype, 
+            requires_grad=True
+        )
     
-    def first_stage_forward(self, x: torch.Tensor):
-        assert x.shape[0] % self._num_micro_batches == 0, f'Batch size {x.shape[0]} must be divisible by {self._num_micro_batches}'
-        assert x.shape[0] == self._mini_batch_size, f'Batch size {x.shape[0]} must be equal to {self._mini_batch_size}'
-        for micro_batch_id in range(self._num_micro_batches):
-            micro_input = x[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size]
-            self.pipe_buffers['inputs'][micro_batch_id] = micro_input.clone()
-            # recompute
-            with torch.no_grad():
-                micro_output = self.model(self.pipe_buffers['inputs'][micro_batch_id])
-            if self._debug:
-                self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
-
-    def forward(self):
-        for micro_batch_id in range(self._num_micro_batches):
-            micro_input = self.pipe_buffers['inputs'][micro_batch_id]
-            # recompute
-            with torch.no_grad():
-                micro_output = self.model(micro_input)
-            if self._debug:
-                self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
-
-    def backward_and_update(self):
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
-        self.model.zero_grad()
-        for micro_batch_id in range(self._num_micro_batches, 0, -1):
-            micro_batch_id -= 1
-            micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
-            # recompute
-            micro_output = self.model(micro_input)
-            micro_grad_output = self.pipe_buffers['grad_outputs'][micro_batch_id]
-            micro_output.backward(micro_grad_output)
-        for name, p in self.model.named_parameters():
-            p.grad.div_(self._num_micro_batches)
-        self.optimizer.step()
+    # torchgpipe: 
+    def _clock_cycles(self, num_stage, num_micro_batch, stage_id, micro_step_id):
+        num_micro_step = 2 * (num_micro_batch + num_stage - 1)
+        if micro_step_id < num_micro_batch + num_stage - 1:
+            micro_batch_id = micro_step_id - stage_id
+            if micro_batch_id < 0 or micro_batch_id >= num_micro_batch:
+                return micro_batch_id, 'bubble'
+            else:
+                return micro_batch_id, 'forward'
+        else:
+            micro_batch_id = num_micro_step - (micro_step_id + stage_id + 1)
+            if micro_batch_id < 0 or micro_batch_id >= num_micro_batch:
+                return micro_batch_id, 'bubble'
+            else:
+                return micro_batch_id, 'backward'
     
-    def last_stage_backward_and_update(self, target: torch.Tensor):
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
-        self.model.zero_grad()
-        for micro_batch_id in range(self._num_micro_batches-1, -1, -1):
-            # recompute
-            micro_input = self.pipe_buffers['inputs'][micro_batch_id]
-            micro_output = self.model(micro_input)
-            micro_target = target[micro_batch_id * self._micro_batch_size:(micro_batch_id + 1) * self._micro_batch_size].clone()
-            micro_loss = self.loss_fn(micro_output, micro_target)
-            micro_loss.backward()
-        for name, p in self.model.named_parameters():
-            p.grad.div_(self._num_micro_batches)
-        optimizer.step()
+    def _print_clock_cycles(self, num_stage, num_micro_batch):
+        total_steps = 2 * (num_micro_batch + num_stage - 1)
+        print(f"| Micro Steps ", end="")
+        for step_id in range(total_steps):
+            print(f"| {step_id:3} ", end="")
+        print("|")
+        for stage_id in range(num_stage):
+            print(f"|  Stage{stage_id:3}   ", end="")
+            for step_id in range(total_steps):
+                if step_id < num_micro_batch + num_stage - 1:
+                    micro_batch_id = step_id - stage_id
+                    if micro_batch_id < 0 or micro_batch_id >= num_micro_batch:
+                        print(f"|  *  ", end="")
+                    else:
+                        print(f"| {micro_batch_id:2}F ", end="")
+                else:
+                    micro_batch_id = total_steps - (step_id + stage_id + 1)
+                    if micro_batch_id < 0 or micro_batch_id >= num_micro_batch:
+                        print(f"|  *  ", end="")
+                    else:
+                        print(f"| {micro_batch_id:2}B ", end="")
+            print("|")
+        total_compute = total_steps * num_stage
+        valid_compute = 2 * num_micro_batch * num_stage
+        print(f"total compute: {total_compute}")
+        print(f"valid compute: {valid_compute}")
+        print(f"bubble numbers: {total_compute - valid_compute}")
+        print(f"bubble ratio: {(total_compute - valid_compute) / total_compute:.2%}")
+
+    def micro_step(self, micro_step_id):
+        stage_id = self._rank
+        micro_batch_id, step_type = self._clock_cycles(self.num_stages, self._num_micro_batches, stage_id, micro_step_id)
 
     def train(self):
-        step = 100
-        for i in range(step):
+        if self._rank == self._world_size - 1 and self._debug:
+            self._print_clock_cycles(self.num_stages, self._num_micro_batches)
+        num_global_step = 100
+        num_micro_step = 2 * (self._num_micro_batches + self.num_stages - 1)
+        for gloabal_step_id in range(num_global_step):
             self.model.zero_grad()
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=0.1)
             # forward
             if self._rank == 0:
                 x = torch.randn(self._mini_batch_size, sizes[self._rank][0], device=self._device, dtype=self._dtype, requires_grad=True)
                 if self._debug:
                     single_x = x.clone()
                     dist.broadcast(single_x, src=0, group=self._group)
-                self.first_stage_forward(x)
+                x = x.chunk(self._num_micro_batches, dim=0)
             else:
                 if self._debug:
                     single_x = torch.empty(self._mini_batch_size, sizes[0][0], device=self._device, dtype=self._dtype, requires_grad=True)
                     dist.broadcast(single_x, src=0, group=self._group)
-                self.forward()
             
-            # backward
             if rank == world_size - 1:
                 target = torch.ones(self._mini_batch_size, sizes[rank][-1], device=self._device, dtype=self._dtype, requires_grad=True)
-                self.last_stage_backward_and_update(target)
+                single_target = target.clone()
+                target = target.chunk(self._num_micro_batches, dim=0)
 
-                if self._debug:
-                    single_target = target.clone()
-                    single_output = self.single_mlp(single_x)
-                    single_loss = self.single_loss_fn(single_output, single_target)
-                    self.single_mlp.zero_grad()
-                    single_optimizer = torch.optim.SGD(self.single_mlp.parameters(), lr=0.1)
-                    single_loss.backward()
-                    single_optimizer.step()
-                    output = torch.cat(self.pipe_buffers['debug_outputs'], dim=0)
+            for micro_step_id in range(num_micro_step):
+                micro_batch_id, step_type = self._clock_cycles(self.num_stages, self._num_micro_batches, self._rank, micro_step_id)
+                if step_type == 'forward':
+                    if self._rank == 0:
+                        self.pipe_buffers['inputs'][micro_batch_id] = x[micro_batch_id].clone()
+                        # recompute
+                        with torch.no_grad():
+                            micro_output = self.model(self.pipe_buffers['inputs'][micro_batch_id])
+                        if self._debug:
+                            self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
+                    else:
+                        micro_input = self.pipe_buffers['inputs'][micro_batch_id]
+                        # recompute
+                        with torch.no_grad():
+                            micro_output = self.model(micro_input)
+                        if self._debug:
+                            self.pipe_buffers['debug_outputs'][micro_batch_id] = micro_output
+                elif step_type == 'backward':
+                    if self._rank == self._world_size - 1:
+                        # recompute
+                        micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
+                        micro_output = self.model(micro_input)
+                        micro_target = target[micro_batch_id].clone()
+                        micro_loss = self.loss_fn(micro_output, micro_target)
+                        micro_loss.backward()
+                    else:
+                        # recompute
+                        micro_input = self.pipe_buffers['inputs'][micro_batch_id].requires_grad_()
+                        micro_output = self.model(micro_input)
+                        micro_grad_output = self.pipe_buffers['grad_outputs'][0]
+                        micro_output.backward(micro_grad_output)
 
-                    print(f'single_output, Rank: {self._rank}, single_output: {single_output}')
-                    print(f'output, Rank: {self._rank}, output: {output}')
-                    assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
-            else:
-                self.backward_and_update()
+                elif step_type == 'bubble':
+                    pass
+
+            for name, p in self.model.named_parameters():
+                p.grad.div_(self._num_micro_batches)
+            optimizer.step()
+
+            if self._rank == self._world_size - 1 and self._debug:
+                output = torch.cat(self.pipe_buffers['debug_outputs'], dim=0)
+                single_output = self.single_mlp(single_x)
+                
+                single_loss = self.single_loss_fn(single_output, single_target)
+                self.single_mlp.zero_grad()
+                single_optimizer = torch.optim.SGD(self.single_mlp.parameters(), lr=0.1)
+                single_loss.backward()
+                single_optimizer.step()
+
+                print(f'single_output, Rank: {self._rank}, single_output: {single_output}')
+                print(f'output, Rank: {self._rank}, output: {output}')
+                assert torch.allclose(output, single_output, atol=1e-2, rtol=1e-2), f'Rank: {rank}, output: {output}, single_output: {single_output}'
 
 
 # torchrun --nnodes 1 --nproc_per_node 4 ld_triton/distributed/pipe/mlp_gpipe.py
@@ -340,5 +380,5 @@ if __name__ == '__main__':
         debug=_debug,
     )
     train.train()
-
+    # dist.barrier()
     dist.destroy_process_group()
