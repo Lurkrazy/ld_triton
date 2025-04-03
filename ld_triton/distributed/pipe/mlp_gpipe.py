@@ -30,7 +30,7 @@ class _naive_linear(torch.autograd.Function):
             if bias.grad is None:
                 bias.grad = torch.zeros_like(bias)
             grad_bias = grad_output.sum(0, keepdim=False)
-            bias.grad += grad_bias
+            bias.grad.add_(grad_bias)
         return grad_input, None, None
 
 
@@ -94,22 +94,44 @@ class NaivePipeMLP(nn.Module):
 
     def _forward_pre_hook(self, module, input):
         if self._rank != 0:
+            recv_ops = []
             for x in input:
-                dist.recv(x, src=self._rank - 1, group=self._group)
+                # dist.recv(x, src=self._rank - 1, group=self._group)
+                recv_op = dist.P2POp(dist.irecv, x, self._rank - 1, group=self._group)
+                recv_ops.append(recv_op)
+            reqs = dist.batch_isend_irecv(recv_ops)
+            for req in reqs:
+                req.wait()
 
     def _forward_hook(self, module, input, output):
         if self._rank != self._world_size - 1:
-            dist.send(output, dst=self._rank + 1, group=self._group)
+            # dist.send(output, dst=self._rank + 1, group=self._group)
+            send_op = dist.P2POp(dist.isend, output, self._rank + 1, group=self._group)
+            reqs = dist.batch_isend_irecv([send_op])
+            for req in reqs:
+                req.wait()
 
     def _backward_pre_hook(self, module, grad_output):
         if self._rank != self._world_size - 1:
+            recv_ops = []
             for x in grad_output:
-                dist.recv(x, src=self._rank + 1, group=self._group)
+                # dist.recv(x, src=self._rank + 1, group=self._group)
+                recv_op = dist.P2POp(dist.irecv, x, self._rank + 1, group=self._group)
+                recv_ops.append(recv_op)
+            reqs = dist.batch_isend_irecv(recv_ops)
+            for req in reqs:
+                req.wait()
 
     def _backward_hook(self, module, grad_input, grad_output):
         if self._rank != 0:
+            send_ops = []
             for x in grad_input:
-                dist.send(x, dst=self._rank - 1, group=self._group)
+                # dist.send(x, dst=self._rank - 1, group=self._group)
+                send_op = dist.P2POp(dist.isend, x, self._rank - 1, group=self._group)
+                send_ops.append(send_op)
+            reqs = dist.batch_isend_irecv(send_ops)
+            for req in reqs:
+                req.wait()
 
     def forward(self, x):
         return self.layers(x)
@@ -293,7 +315,7 @@ class GPipeMLPTrain():
                 self.backward_and_update()
 
 
-# torchrun --nnodes 1 --nproc_per_node 4 ld_triton/distributed/continuous_pipe/mlp_gpipe.py
+# 
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
     world_size = dist.get_world_size()
