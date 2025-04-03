@@ -241,32 +241,32 @@ class GPipeMLPTrain():
     
     def _print_clock_cycles(self, num_stage, num_micro_batch):
         total_steps = 2 * (num_micro_batch + num_stage - 1)
-        print(f"| Micro Steps ", end="")
+        print(f'| Micro Steps ', end='')
         for step_id in range(total_steps):
-            print(f"| {step_id:3} ", end="")
-        print("|")
+            print(f'| {step_id:3} ', end='')
+        print('|')
         for stage_id in range(num_stage):
-            print(f"|  Stage{stage_id:3}   ", end="")
+            print(f'|  Stage{stage_id:3}   ', end='')
             for step_id in range(total_steps):
                 if step_id < num_micro_batch + num_stage - 1:
                     micro_batch_id = step_id - stage_id
                     if micro_batch_id < 0 or micro_batch_id >= num_micro_batch:
-                        print(f"|  *  ", end="")
+                        print(f'|  *  ', end='')
                     else:
-                        print(f"| {micro_batch_id:2}F ", end="")
+                        print(f'| {micro_batch_id:2}F ', end='')
                 else:
                     micro_batch_id = total_steps - (step_id + stage_id + 1)
                     if micro_batch_id < 0 or micro_batch_id >= num_micro_batch:
-                        print(f"|  *  ", end="")
+                        print(f'|  *  ', end='')
                     else:
-                        print(f"| {micro_batch_id:2}B ", end="")
-            print("|")
+                        print(f'| {micro_batch_id:2}B ', end='')
+            print('|')
         total_compute = total_steps * num_stage
         valid_compute = 2 * num_micro_batch * num_stage
-        print(f"total compute: {total_compute}")
-        print(f"valid compute: {valid_compute}")
-        print(f"bubble numbers: {total_compute - valid_compute}")
-        print(f"bubble ratio: {(total_compute - valid_compute) / total_compute:.2%}")
+        print(f'total compute: {total_compute}')
+        print(f'valid compute: {valid_compute}')
+        print(f'bubble numbers: {total_compute - valid_compute}')
+        print(f'bubble ratio: {(total_compute - valid_compute) / total_compute:.2%}')
 
     def micro_step(self, micro_step_id):
         stage_id = self._rank
