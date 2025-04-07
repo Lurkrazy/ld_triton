@@ -99,6 +99,9 @@ class GPipe(nn.Module):
         self._optimizer = optimizer
         self.init_pipe_buffers()
 
+        if self._stage_id == self._num_stage - 1 and self._debug:
+            self._print_clock_cycles(self._num_stage, self._num_micro_batch)
+            
     def init_pipe_buffers(self):
         factory_kwargs = {'device': self._device, 'dtype': self._dtype, 'requires_grad': True}
         shape = (self._micro_batch_size, *self._model_input_shape[1:])
@@ -161,8 +164,6 @@ class GPipe(nn.Module):
         print(f'bubble ratio: {(total_compute - valid_compute) / total_compute:.2%}')
 
     def global_step(self, input: torch.Tensor, target: torch.Tensor):
-        if self._stage_id == self._num_stage - 1 and self._debug:
-            self._print_clock_cycles(self._num_stage, self._num_micro_batch)
         num_micro_step = 2 * (self._num_micro_batch + self._num_stage - 1)
 
         self._model.zero_grad()
@@ -214,7 +215,11 @@ class GPipe(nn.Module):
 
         optimizer.step()
 
+# one node
 # torchrun --nproc_per_node 4 --nnodes 1 ld_triton/distributed/pipe/gpipe.py
+# two nodes
+# torchrun --nproc_per_node=1 --nnodes=2 --node_rank=0 --master-addr 10.10.13.101 --master-port 29400 --max_restarts=0 ./ld_triton/distributed/pipe/gpipe.py
+# torchrun --nproc_per_node=1 --nnodes=2 --node_rank=1 --master-addr 10.10.13.101 --master-port 29400  --max_restarts=0 ./ld_triton/distributed/pipe/gpipe.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
     num_stage = dist.get_world_size()
