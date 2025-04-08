@@ -39,4 +39,6 @@ triton ops
 [submcon3d](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/conv2d.md)
 
 ## distributed
-[sgd](https://github.com/l1351868270/ld_triton/blob/main/docs/optim/sgd.md)
+[data_parallel](https://github.com/l1351868270/ld_triton/blob/main/docs/distributed/data_parallel.md)
+
+[pipeline_parallel](https://github.com/l1351868270/ld_triton/blob/main/docs/distributed/pipeline_parallel.md)
