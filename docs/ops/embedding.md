@@ -18,15 +18,15 @@ $\frac {output_{p,q}}{\partial weight_{i,j}}$
 
 $i \neq input_{p}$
 
-$\frac {output_{p,q}}{\partial input_{i,j}} = 0$
+$\frac {output_{p,q}}{\partial weight_{i,j}} = 0$
 
 $i = input_{p} , q \neq j$
 
-$\frac {output_{p,q}}{\partial input_{i,j}} = 0$
+$\frac {output_{p,q}}{\partial weight_{i,j}} = 0$
 
 $i = input_{p},q = j$
 
-$\frac {output_{p,q}}{\partial input_{i,j}} = 1$
+$\frac {output_{p,q}}{\partial weight_{i,j}} = 1$
 
 ## 链式法则
 
@@ -38,4 +38,4 @@ $= \sum_{p=0}^{M-1} \sum_{q=0}^{N-1} df_{pq} * \frac{output_{p,q}}{weight_{i,j}}
 
 $= \sum_{p=0}^{M-1}  df_{pj} * \frac{output_{p,j}}{weight_{i,j}}$
 
-$= \sum_{input_{p}=i}  df_{pj} * \frac{output_{p,j}}{weight_{i,j}}$
+$= \sum_{input_{p}=i}  df_{pj}$
