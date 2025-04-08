@@ -2,11 +2,17 @@
 
 for simple assum $X \in R^{1}$
 
+<p>
 $GBS = global\_batch\_size$
+</p>
 
+<p>
 $MBS = micro\_batch\_size$
+</p>
 
+<p>
 $MB = num\_micro\_batch = \frac{GBS}{MBS}$
+</p>
 
 $L^{global}(θ;X,Y) = \frac{1}{GBS}\sum_{i=0}^{GBS-1}J(θ;x_{i}, y_{i})$
 
