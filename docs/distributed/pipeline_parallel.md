@@ -19,7 +19,6 @@ $L^{global}(θ;X,Y) = \frac{1}{GBS}\sum_{i=0}^{GBS-1}J(θ;x_{i}, y_{i})$
 $∇_{θ}L^{global}(θ;X,Y) = \frac{1}{GBS}\sum_{i=0}^{GBS-1}∇_{θ}J(θ;x_{i}, y_{i})$
 
 
-
 # micro gradient
 
 $L^{micro}(θ;X,Y) = \frac{1}{MBS}\sum_{i=0}^{MBS-1}J(θ;x_{i}, y_{i})$
