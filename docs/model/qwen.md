@@ -21,7 +21,7 @@ $f * t_f + m * t_m = f * t_f * (1 + \frac{t_m}{t_f}  * \frac{1}{CI})$
 $SEQ\_LEN = 2048$
 
 $GBS = global\_batch\_size$
-
+</p>
 ## embed_tokens(Embedding)
 
 $f\_forward = 0$
@@ -30,7 +30,7 @@ $f\_backward = o(0)$
 
 $weight\_shape = (vocab\_size, hidden\_size)$
 
-</p>
+
 
 ## rotary_emb(Qwen2RotaryEmbedding)
 
