@@ -266,7 +266,7 @@ $q\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim
 </p>
 
 <p>
-$\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$k_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
