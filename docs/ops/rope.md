@@ -1,4 +1,4 @@
-# forward
+# rope
 ## 元素表示
 <p>
 $f_{q,k}(x_m, m) = R^{d}_{m,Θ}W_{q,k}x_m$
@@ -17,6 +17,12 @@ $f_{k}(x_n, n) = R^{d}_{n,Θ}W_{k}x_n$
 $f(q_m) = R^{d}_{m,Θ}q_m$
 
 $f(k_n) = R^{d}_{n,Θ}k_n$
+
+## 矩阵表示
+
+$f(Q) = Q(R^{d}_{m,Θ})^T$
+
+$f(K) = K(R^{d}_{m,Θ})^T$
 
 ## 原始论文
 
@@ -190,12 +196,11 @@ $$
 
 $θ_i = 10000^{−i/d}, i \in [0, 2, ..., d-2]$
 
-## 矩阵表示
-
-$f(Q) = Q(R^{d}_{m,Θ})^T$
-
-$f(K) = K(R^{d}_{m,Θ})^T$
+# yarp
 
 # 文献
 [ROFORMER: ENHANCED TRANSFORMER WITH ROTARY
 POSITION EMBEDDING](https://arxiv.org/pdf/2104.09864)
+
+[YARN: EFFICIENT CONTEXT WINDOW EXTENSION OF
+LARGE LANGUAGE MODELS](https://arxiv.org/pdf/2309.00071)
