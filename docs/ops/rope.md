@@ -32,8 +32,9 @@ sin(m\theta_1) & cos(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
 \end{bmatrix}
 $$
 
-<p>
-$R_{n,Θ}^{d}x =  \begin{bmatrix}
+
+$$
+R_{n,Θ}^{d}x =  \begin{bmatrix}
 x_{1} \\
 x_{2} \\
 x_{3} \\
@@ -66,8 +67,7 @@ sin(m\theta_2) \\
 sin(m\theta_{d/2}) \\
 sin(m\theta_{d/2}) \\
 \end{bmatrix}
-$
-</p>
+$$
 
 $θ_i = 10000^{−2(i−1)/d}, i \in [1, 2, ..., d/2]$
 
