@@ -260,29 +260,50 @@ $f\_forward = 4 * GBS * SEQ\_LEN * hidden\_size$
 ## Total
 只考虑attention, linear(不包含bias), matmul
 ### self_attn
+<p>
 $q_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
 
+<p>
 $k_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $v_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $o_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
 
+<p>
 $qk: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+</p>
 
+<p>
 $pv: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+</p>
 
+<p>
 $self\_atten\_total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+</p>
 
 ### mlp
+<p>
 $gate\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+</p>
 
+<p>
 $up\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+</p>
 
+<p>
 $down\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+</p>
 
+<p>
 $mlp\_total: 6 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
-
+</p>
 
 # References
 
