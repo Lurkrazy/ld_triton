@@ -115,30 +115,58 @@ $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head
 </p>
 
 #### o_proj(Linear)
+<p>
 $weight\_shape = (num\_attention\_heads * head\_dim, hidden\_size)$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, num\_attention\_heads * head\_dim)$
+</p>
 
+<p>
 $output\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+</p>
 
+<p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
 
 #### attention_interface
+<p>
 $q\_shape = (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
+</p>
+
+<p>
 $k\_shape = (GBS, num\_key\_value\_heads, SEQ\_LEN, head\_dim) -> (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
+</p>
+
+<p>
 $v\_shape = (GBS, num\_key\_value\_heads, SEQ\_LEN, head\_dim) -> (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
+</p>
 
+<p>
 $qk: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+</p>
 
+<p>
 $scaling: GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+</p>
 
+<p>
 $softmax: GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+</p>
 
+<p>
 $pv: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+</p>
 
+<p>
 $total: 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim + 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+</p>
 
+<p>
 $Qwen2Attention total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_attention\_heads * head\_dim) + 2 * GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim) + 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim + 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+</p>
 
 ### rotary_emb
 $f\_forward = GBS * SEQ\_LEN * 3$
