@@ -262,48 +262,48 @@ $f\_forward = 4 * GBS * SEQ\_LEN * hidden\_size$
 ### self_attn
 
 <p>
-$q\_proj: 2 * GBS * SEQ\_LEN * num_hidden_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
+$q\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$k\_proj: 2 * GBS * SEQ\_LEN * num_hidden_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$k\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
-$v\_proj: 2 * GBS * SEQ\_LEN * num_hidden_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$v\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
-$o\_proj: 2 * GBS * SEQ\_LEN * num_hidden_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
+$o\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$qk: 2 * GBS * num_hidden_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$qk: 2 * GBS * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
 </p>
 
 <p>
-$pv: 2 * GBS  * num_hidden_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$pv: 2 * GBS  * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
 </p>
 
 <p>
-$self\_atten\_total: 4 * GBS * SEQ\_LEN  * num_hidden_layers * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN  * num_hidden_layers * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS  * num_hidden_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$self\_atten\_total: 4 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS  * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
 </p>
 
 ### mlp
 <p>
-$gate\_proj: 2 * GBS * SEQ\_LEN  * num_hidden_layers * hidden\_size * intermediate\_size$
+$gate\_proj: 2 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$up\_proj: 2 * GBS * SEQ\_LEN  * num_hidden_layers * hidden\_size * intermediate\_size$
+$up\_proj: 2 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$down\_proj: 2 * GBS * SEQ\_LEN  * num_hidden_layers * hidden\_size * intermediate\_size$
+$down\_proj: 2 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$mlp\_total: 6 * GBS * SEQ\_LEN  * num_hidden_layers * hidden\_size * intermediate\_size$
+$mlp\_total: 6 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
 </p>
 
 # References
