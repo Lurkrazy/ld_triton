@@ -26,6 +26,8 @@ triton ops
 
 [rmsnorm](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/rmsnorm.md)
 
+[rope](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/rope.md)
+
 [sigmoid](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/sigmoid.md)
 
 [softmax](https://github.com/l1351868270/ld_triton/blob/main/docs/ops/softmax.md)
