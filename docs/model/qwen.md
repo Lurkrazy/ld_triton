@@ -24,14 +24,20 @@ $SEQ\_LEN = 2048$
 <p>
 $GBS = global\_batch\_size$
 </p>
+
 ## embed_tokens(Embedding)
 
+<p>
 $f\_forward = 0$
+</p>
 
+<p>
 $f\_backward = o(0)$
+</p>
 
+<p>
 $weight\_shape = (vocab\_size, hidden\_size)$
-
+</p>
 
 
 ## rotary_emb(Qwen2RotaryEmbedding)
