@@ -19,7 +19,9 @@ $f * t_f + m * t_m = f * t_f * (1 + \frac{t_m}{t_f}  * \frac{1}{CI})$
 # Model FLOPs Utilization (MFU)
 <p>
 $SEQ\_LEN = 2048$
+</p>
 
+<p>
 $GBS = global\_batch\_size$
 </p>
 ## embed_tokens(Embedding)
