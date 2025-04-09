@@ -140,7 +140,8 @@ sin(m\theta_0) & 0 & \cdots & 0 & 0 & \cdots & cos(m\theta_{0}) & 0 & \cdots & 0
 \end{bmatrix}
 $$
 
-$R^{d}_{n,Θ}x =  \begin{bmatrix}
+$$
+R_{n,Θ}^{d}x =  \begin{bmatrix}
 x_{0} \\
 x_{1} \\
 \vdots \\
@@ -185,7 +186,7 @@ sin(m\theta_2) \\
 sin(m\theta_{d-4}) \\
 sin(m\theta_{d-2}) \\
 \end{bmatrix}
-$
+$$
 
 $θ_i = 10000^{−i/d}, i \in [0, 2, ..., d-2]$
 
