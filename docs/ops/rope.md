@@ -72,8 +72,8 @@ $$
 $θ_i = 10000^{−2(i−1)/d}, i \in [1, 2, ..., d/2]$
 
 ## 原始论文等价
-$
-R^{d}_{n,Θ} = \begin{bmatrix}
+$$
+R_{n,Θ}^{d} = \begin{bmatrix}
 cos(m\theta_0) & -sin(m\theta_0) & 0 & 0 & \cdots & 0 & 0 \\
 sin(m\theta_0) & cos(m\theta_0) & 0 & 0 & \cdots & 0 & 0 \\
 0 & 0 & cos(m\theta_2) & -sin(m\theta_2) & \cdots & 0 & 0 \\
@@ -82,7 +82,7 @@ sin(m\theta_0) & cos(m\theta_0) & 0 & 0 & \cdots & 0 & 0 \\
 0 & 0 & 0 & 0 & \cdots & cos(m\theta_{d-2}) & -sin(m\theta_{d-2}) \\
 0 & 0 & 0 & 0 & \cdots & sin(m\theta_{d-2}) & 0 \\
 \end{bmatrix}
-$
+$$
 
 $R^{d}_{n,Θ}x =  \begin{bmatrix}
 x_{0} \\
