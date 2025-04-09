@@ -21,7 +21,7 @@ $f(k_n) = R^{d}_{n,Θ}k_n$
 ## 原始论文
 
 $$
-\begin{bmatrix}
+R^{d}_{n,\theta} = \begin{bmatrix}
 cos(m\theta_1) & -sin(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
 sin(m\theta_1) & cos(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
 0 & 0 & cos(m\theta_2) & -sin(m\theta_2) & \cdots & 0 & 0 \\
