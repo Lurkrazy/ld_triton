@@ -17,7 +17,9 @@ $CI = \frac{f}{m}$  average number of flops per slow memory access
 $f * t_f + m * t_m = f * t_f * (1 + \frac{t_m}{t_f}  * \frac{1}{CI})$
 
 # Model FLOPs Utilization (MFU)
+<p>
 $SEQ\_LEN = 2048$
+
 $GBS = global\_batch\_size$
 
 ## embed_tokens(Embedding)
@@ -27,6 +29,8 @@ $f\_forward = 0$
 $f\_backward = o(0)$
 
 $weight\_shape = (vocab\_size, hidden\_size)$
+
+</p>
 
 ## rotary_emb(Qwen2RotaryEmbedding)
 
@@ -158,16 +162,16 @@ $qk: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
 
 $pv: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
 
-$self_atten total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$self\_atten\_total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
 
 ### mlp
-$gate_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$gate\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
 
-$up_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$up\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
 
-$down_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$down\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
 
-$mlp total: 6 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$mlp\_total: 6 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
 
 
 # References
