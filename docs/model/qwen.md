@@ -73,26 +73,46 @@ $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\
 </p>
 
 #### k_proj(Linear)
+<p>
 $weight\_shape = (hidden\_size, num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $bias\_shape = (num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+</p>
 
+<p>
 $output\_shape = (GBS, SEQ\_LEN, num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim)$
+</p>
 
 #### v_proj(Linear)
+<p>
 $weight\_shape = (hidden\_size, num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $bias\_shape = (num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+</p>
 
+<p>
 $output\_shape = (GBS, SEQ\_LEN, num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim)$
+</p>
 
 #### o_proj(Linear)
 $weight\_shape = (num\_attention\_heads * head\_dim, hidden\_size)$
