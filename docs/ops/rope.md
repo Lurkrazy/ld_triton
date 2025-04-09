@@ -80,11 +80,12 @@ sin(m\theta_0) & cos(m\theta_0) & 0 & 0 & \cdots & 0 & 0 \\
 0 & 0 & sin(m\theta_2) & cos(m\theta_2) & \cdots & 0 & 0 \\
 \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
 0 & 0 & 0 & 0 & \cdots & cos(m\theta_{d-2}) & -sin(m\theta_{d-2}) \\
-0 & 0 & 0 & 0 & \cdots & sin(m\theta_{d-2}) & 0 \\
+0 & 0 & 0 & 0 & \cdots & sin(m\theta_{d-2}) & cos(m\theta_{d-2}) \\
 \end{bmatrix}
 $$
 
-$R^{d}_{n,Θ}x =  \begin{bmatrix}
+$$
+R_{n,Θ}^{d}x =  \begin{bmatrix}
 x_{0} \\
 x_{1} \\
 x_{2} \\
@@ -117,7 +118,7 @@ sin(m\theta_2) \\
 sin(m\theta_{d-2}) \\
 sin(m\theta_{d-2}) \\
 \end{bmatrix}
-$
+$$
 
 $θ_i = 10000^{−i/d}, i \in [0, 2, ..., d-2]$
 
