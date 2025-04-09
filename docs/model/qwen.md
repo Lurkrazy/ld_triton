@@ -262,19 +262,19 @@ $f\_forward = 4 * GBS * SEQ\_LEN * hidden\_size$
 ### self_attn
 
 <p>
-$q_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
+$q\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$k_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
-$v_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$v\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
-$o_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
+$o\_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
