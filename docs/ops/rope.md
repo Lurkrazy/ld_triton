@@ -1,10 +1,16 @@
 # forward
 ## 元素表示
+<p>
 $f_{q,k}(x_m, m) = R^{d}_{m,Θ}W_{q,k}x_m$
+</p>
 
+<p>
 $f_{q}(x_m, m) = R^{d}_{m,Θ}W_{q}x_m$
+</p>
 
+</p>
 $f_{k}(x_n, n) = R^{d}_{n,Θ}W_{k}x_n$
+<p>
 
 矩阵乘法结合律
 
