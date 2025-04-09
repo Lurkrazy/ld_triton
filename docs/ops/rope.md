@@ -33,7 +33,7 @@ sin(m\theta_1) & cos(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
 $$
 
 <p>
-$R^{d}_{n,Θ}x =  \begin{bmatrix}
+$R_{n,Θ}^{d}x =  \begin{bmatrix}
 x_{1} \\
 x_{2} \\
 x_{3} \\
