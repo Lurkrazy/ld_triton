@@ -169,52 +169,93 @@ $Qwen2Attention total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_head
 </p>
 
 ### rotary_emb
+<p>
 $f\_forward = GBS * SEQ\_LEN * 3$
+</p>
 
 ### mlp(Qwen2MLP)
 #### gate_proj(Linear)
+<p>
 $weight\_shape = (hidden\_size, intermediate\_size)$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+</p>
 
+<p>
 $output\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+</p>
 
+<p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+</p>
 
 #### up_proj(Linear)
+
+<p>
 $weight\_shape = (hidden\_size, intermediate\_size)$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+</p>
 
+<p>
 $output\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+</p>
 
+<p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+</p>
 
 #### act_fn(silu)
 
+<p>
 $silu(x) = \frac{x}{1 + e^{-x}}$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+</p>
 
+<p>
 $f\_forward = 3 * GBS * SEQ\_LEN * intermediate\_size$
+</p>
 
 #### down_proj(Linear)
+<p>
 $weight\_shape = (intermediate\_size, hidden\_size)$
+</p>
 
+<p>
 $input\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+</p>
 
+<p>
 $output\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+</p>
 
+<p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+</p>
 
+<p>
 $mlp total: 6 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size + 3 * GBS * SEQ\_LEN * intermediate\_size$
+</p>
 
 ### input_layernorm(Qwen2RMSNorm)
+<p>
 $y_{i} = \frac{x_{i}}{RMS(x)} * \gamma_{i}$
+</p>
 
+<p>
 $RMS(x) = \sqrt {\epsilon + \frac{1}{n}\sum_{i=0}^{n-1}x_{i}^2}$
+</p>
 
+<p>
 $f\_forward = 4 * GBS * SEQ\_LEN * hidden\_size$
+</p>
 
 ## Total
 只考虑attention, linear(不包含bias), matmul
