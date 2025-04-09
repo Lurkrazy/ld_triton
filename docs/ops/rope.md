@@ -19,6 +19,7 @@ $f(q_m) = R^{d}_{m,Θ}q_m$
 $f(k_n) = R^{d}_{n,Θ}k_n$
 
 ## 原始论文
+
 $$
 R^{d}_{n,Θ} = \begin{bmatrix}
 cos(m\theta_1) & -sin(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
