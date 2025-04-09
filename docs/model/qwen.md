@@ -260,6 +260,7 @@ $f\_forward = 4 * GBS * SEQ\_LEN * hidden\_size$
 ## Total
 只考虑attention, linear(不包含bias), matmul
 ### self_attn
+
 <p>
 $q_proj: 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
