@@ -149,18 +149,18 @@ $bias\_shape = (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$input\_shape = (batch\_size, seqlen_q, hidden\_size)$
+$input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
 <p>
-$output\_shape = (batch\_size, seqlen_q, num\_attention\_heads * head\_dim)$
+$output\_shape = (batch\_size, seqlen\_q, num\_attention\_heads * head\_dim)$
 </p>
 
 ##### Tensor Core
 ###### forward
 
 <p>
-$FLOPs = 2 * batch\_size * seqlen_q * hidden\_size * (num\_attention\_heads * head\_dim)$
+$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
 ###### backword
@@ -170,7 +170,7 @@ $FLOPs = 2 * batch\_size * seqlen_q * hidden\_size * (num\_attention\_heads * he
 ###### forward
 
 <p>
-$batch\_size * seqlen_q  * (num\_attention\_heads * head\_dim)$
+$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
 </p>
 
 ###### backword
@@ -187,10 +187,6 @@ $FLOPs = 0$
 
 <p>
 $FLOPs = 0$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_attention\_heads * head\_dim)$
 </p>
 
 #### k_proj(Linear)
