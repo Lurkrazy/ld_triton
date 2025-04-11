@@ -42,25 +42,54 @@ $= \frac{2}{\frac{2}{K}+ \frac{1}{BLOCK\_N} + \frac{1}{BLOCK\_M}}$
 
 # Model FLOPs Utilization (MFU)
 <p>
-$SEQ\_LEN = 2048$
+$batch\_size, seqlen_q, seqlen_kv$
 </p>
 
-<p>
-$GBS = global\_batch\_size$
-</p>
-
-## embed_tokens(Embedding)
-
-<p>
-$f\_forward = 0$
-</p>
-
-<p>
-$f\_backward = o(0)$
-</p>
+## embed_tokens
 
 <p>
 $weight\_shape = (vocab\_size, hidden\_size)$
+</p>
+
+### Tensor Core
+#### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+#### backword
+
+<p>
+$FLOPs = o(0)$
+</p>
+
+### Cuda Core
+
+#### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+#### backword
+
+<p>
+$FLOPs = o(0)$
+</p>
+
+### MuFu
+
+#### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+#### backword
+
+<p>
+$FLOPs = o(0)$
 </p>
 
 
