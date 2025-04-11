@@ -16,6 +16,30 @@ $CI = \frac{f}{m}$  average number of flops per slow memory access
 
 $f * t_f + m * t_m = f * t_f * (1 + \frac{t_m}{t_f}  * \frac{1}{CI})$
 
+## matmul CI
+
+$A \in R^{MK}$
+
+$B \in R^{KN}$
+
+$C \in R^{MN}$
+
+$f = 2MNK$
+
+$m_{C} = 2MN$    读一次，写一次
+
+$m_{A} = MK* \frac{N}{BLOCK\_N}$
+
+$m_{B} = KN* \frac{M}{BLOCK\_M}$
+
+$m = 2MN + \frac{MNK}{BLOCK\_N} + \frac{MNK}{BLOCK\_M}$
+
+$CI = \frac{f}{m}$
+
+$= \frac{2MNK}{2MN + \frac{MNK}{BLOCK\_N} + \frac{MNK}{BLOCK\_M}}$
+
+$= \frac{2}{\frac{2}{K}+ \frac{1}{BLOCK\_N} + \frac{1}{BLOCK\_M}}$
+
 # Model FLOPs Utilization (MFU)
 <p>
 $SEQ\_LEN = 2048$
@@ -543,3 +567,15 @@ $mlp\_total: 6 * GBS * num\_hidden\_layers * hidden\_size * intermediate\_size$
 [large-scale-training-hugging-face](https://pytorch.org/blog/large-scale-training-hugging-face/)
 
 [PaLM: Scaling Language Modeling with Pathways](https://arxiv.org/pdf/2204.02311)
+
+[WASP: Exploiting GPU Pipeline Parallelism with Hardware-Accelerated Automatic Warp Specialization](https://www.nealcrago.com/wp-content/uploads/WASP_HPCA2024_preprint.pdf)
+
+[ISPA: Exploiting Intra-SM Parallelism in GPUs via Fine-grained Resource Management](https://mivenhan.github.io/publication/2022ispa/2022ispa.pdf)
+
+[Improving GPU Throughput through Parallel Execution Using Tensor Cores and CUDA Cores](https://par.nsf.gov/servlets/purl/10415343)
+
+[Warp Scheduling and Divergenc](https://cse.iitkgp.ac.in/~soumya/hp3/slides/warp-divr.pdf)
+
+[Dissecting the CUDA scheduling hierarchy: a Performance and Predictability Perspective](https://conferences.computer.org/cpsiot/pdfs/RTAS2020-4uXAu5nqG7QNiz5wFYyfj6/549900a210/549900a210.pdf)
+
+[Embedding计算在GPU上的性能优化](https://yywangcs.notion.site/Embedding-GPU-1-GPU-Occupancy-178fc9f5d80580d4affddeb4c40c64e0)
