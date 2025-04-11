@@ -42,7 +42,7 @@ $= \frac{2}{\frac{2}{K}+ \frac{1}{BLOCK\_N} + \frac{1}{BLOCK\_M}}$
 
 # Model FLOPs Utilization (MFU)
 <p>
-$batch\_size, seqlen_q, seqlen_kv$
+$batch\_size, seqlen\_q, seqlen\_kv$
 </p>
 
 ## embed_tokens
@@ -61,7 +61,7 @@ $FLOPs = 0$
 #### backword
 
 <p>
-$FLOPs = o(0)$
+$FLOPs = 0$
 </p>
 
 ### Cuda Core
@@ -89,7 +89,7 @@ $FLOPs = 0$
 #### backword
 
 <p>
-$FLOPs = o(0)$
+$FLOPs = 0$
 </p>
 
 
