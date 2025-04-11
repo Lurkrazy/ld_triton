@@ -44,3 +44,6 @@ triton ops
 [data_parallel](https://github.com/l1351868270/ld_triton/blob/main/docs/distributed/data_parallel.md)
 
 [pipeline_parallel](https://github.com/l1351868270/ld_triton/blob/main/docs/distributed/pipeline_parallel.md)
+
+## models
+[qwen](https://github.com/l1351868270/ld_triton/blob/main/docs/model/qwen.md)
