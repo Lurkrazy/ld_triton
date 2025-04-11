@@ -78,7 +78,7 @@ $FLOPs = 0$
 $FLOPs = o(0)$
 </p>
 
-### MuFu
+### SFU
 
 #### forward
 
@@ -93,10 +93,47 @@ $FLOPs = 0$
 </p>
 
 
-## rotary_emb(Qwen2RotaryEmbedding)
+## rotary_emb
+
+### Tensor Core
+#### forward
 
 <p>
-$f\_forward = GBS * SEQ\_LEN * 3$
+$FLOPs = 0$
+</p>
+
+#### backword
+
+<p>
+$FLOPs = 0$
+</p>
+
+### Cuda Core
+
+#### forward
+
+<p>
+$FLOPs = hidden\_size * seqlen$
+</p>
+
+#### backword
+
+<p>
+$FLOPs = o(0)$
+</p>
+
+### SFU
+
+#### forward
+
+<p>
+$FLOPs = hidden\_size * seqlen$
+</p>
+
+#### backword
+
+<p>
+$FLOPs = 0$
 </p>
 
 # layers
