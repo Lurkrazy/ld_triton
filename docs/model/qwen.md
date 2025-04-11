@@ -191,7 +191,7 @@ $FLOPs = 0$
 
 #### k_proj(Linear)
 <p>
-$weight\_shape = (hidden\_size, num\_key\_value\_heads * head\_dim)$
+$weight\_shape = ( num\_key\_value\_heads * head\_dim, hidden\_size)$
 </p>
 
 <p>
@@ -199,12 +199,41 @@ $bias\_shape = (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$input\_shape = (batch\_size, seqlen\_kv, hidden\_size)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, num\_key\_value\_heads * head\_dim)$
+$output\_shape = (batch\_size, seqlen\_kv, num\_key\_value\_heads * head\_dim)$
 </p>
+
+##### Tensor Core
+###### forward
+
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+###### backword
+
+##### Cuda Core
+
+###### forward
+
+<p>
+$batch\_size * seqlen\_q  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+###### backword
+
+##### SFU
+
+###### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+###### backword
 
 <p>
 $f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim)$
