@@ -341,36 +341,58 @@ $FLOPs = 0$
 
 #### attention_interface
 <p>
-$q\_shape = (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
+$q\_shape = (batch\_size, num\_attention\_heads, seqlen\_q, head\_dim)$
 </p>
 
 <p>
-$k\_shape = (GBS, num\_key\_value\_heads, SEQ\_LEN, head\_dim) -> (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
+$k\_shape = (batch\_size, num\_key\_value\_heads, seqlen\_kv, head\_dim) -> (batch\_size, num\_attention\_heads, seqlen\_kv, head\_dim)$
 </p>
 
 <p>
-$v\_shape = (GBS, num\_key\_value\_heads, SEQ\_LEN, head\_dim) -> (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
+$v\_shape = (batch\_size, num\_key\_value\_heads, seqlen\_kv, head\_dim) -> (GBS, num\_attention\_heads, seqlen\_kv, head\_dim)$
+</p>
+
+$softmax(x_{ij}) = \frac{exp^{x_{ij}-M}}{\sum_{k=0}^{seqlen\_kv-1}exp^{x_{ik}-M}}$
+
+##### Tensor Core
+###### forward
+<p>
+$qk: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
 <p>
-$qk: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$pv: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
 <p>
-$scaling: GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+$total: 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
+###### backward
+
+##### Cuda Core
+###### forward
+
+<p>
+$scaling: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
 <p>
-$softmax: GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+$softmax: 3 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
 <p>
-$pv: 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$total: 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
+###### backward
+
+##### SFU
 <p>
-$total: 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim + 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+$softmax: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
+
+###### backward
 
 <p>
 $Qwen2Attention total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_attention\_heads * head\_dim) + 2 * GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim) + 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim + 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2}$
