@@ -45,7 +45,7 @@ $= \frac{2}{\frac{2}{K}+ \frac{1}{BLOCK\_N} + \frac{1}{BLOCK\_M}}$
 $batch\_size, seqlen\_q, seqlen\_kv$
 </p>
 
-## embed_tokens
+## embed_tokens(Embedding)
 
 <p>
 $weight\_shape = (vocab\_size, hidden\_size)$
@@ -93,8 +93,7 @@ $FLOPs = 0$
 </p>
 
 
-## rotary_emb
-
+## rotary_emb(Qwen2RotaryEmbedding)
 ### Tensor Core
 #### forward
 
@@ -119,7 +118,7 @@ $FLOPs = hidden\_size * seqlen$
 #### backword
 
 <p>
-$FLOPs = o(0)$
+$FLOPs = 0$
 </p>
 
 ### SFU
@@ -136,14 +135,13 @@ $FLOPs = hidden\_size * seqlen$
 $FLOPs = 0$
 </p>
 
-# layers
-[Qwen2DecoderLayer for _ in range(num_hidden_layers )]
+## layers(Qwen2DecoderLayer * num_hidden_layers )
 ## Qwen2DecoderLayer
 ### self_attn(Qwen2Attention)
 #### q_proj(Linear)
 
 <p>
-$weight\_shape = (hidden\_size, num\_attention\_heads * head\_dim)$
+$weight\_shape = (num\_attention\_heads * head\_dim, hidden\_size)$
 </p>
 
 <p>
@@ -151,11 +149,44 @@ $bias\_shape = (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$input\_shape = (batch\_size, seqlen_q, hidden\_size)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, num\_attention\_heads * head\_dim)$
+$output\_shape = (batch\_size, seqlen_q, num\_attention\_heads * head\_dim)$
+</p>
+
+##### Tensor Core
+###### forward
+
+<p>
+$FLOPs = 2 * batch\_size * seqlen_q * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
+
+###### backword
+
+##### Cuda Core
+
+###### forward
+
+<p>
+$batch\_size * seqlen_q  * (num\_attention\_heads * head\_dim)$
+</p>
+
+###### backword
+
+##### SFU
+
+###### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+###### backword
+
+<p>
+$FLOPs = 0$
 </p>
 
 <p>
