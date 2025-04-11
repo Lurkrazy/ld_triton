@@ -210,7 +210,7 @@ $output\_shape = (batch\_size, seqlen\_kv, num\_key\_value\_heads * head\_dim)$
 ###### forward
 
 <p>
-$FLOPs = 2 * batch\_size * seqlen\_q *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$FLOPs = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 ###### backword
@@ -220,7 +220,7 @@ $FLOPs = 2 * batch\_size * seqlen\_q *  hidden\_size * (num\_key\_value\_heads *
 ###### forward
 
 <p>
-$batch\_size * seqlen\_q  * (num\_key\_value\_heads * head\_dim)$
+$batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 ###### backword
@@ -236,12 +236,13 @@ $FLOPs = 0$
 ###### backword
 
 <p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim)$
+$FLOPs = 0$
 </p>
+
 
 #### v_proj(Linear)
 <p>
-$weight\_shape = (hidden\_size, num\_key\_value\_heads * head\_dim)$
+$weight\_shape = (num\_key\_value\_heads * head\_dim, hidden\_size)$
 </p>
 
 <p>
@@ -249,33 +250,94 @@ $bias\_shape = (num\_key\_value\_heads * head\_dim)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$input\_shape = (batch\_size, seqlen\_kv , hidden\_size)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, num\_key\_value\_heads * head\_dim)$
+$output\_shape = (batch\_size, seqlen\_kv , num\_key\_value\_heads * head\_dim)$
 </p>
 
+##### Tensor Core
+###### forward
+
 <p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim)$
+$FLOPs = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+###### backword
+
+##### Cuda Core
+
+###### forward
+
+<p>
+$batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+###### backword
+
+##### SFU
+
+###### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+###### backword
+
+<p>
+$FLOPs = 0$
 </p>
 
 #### o_proj(Linear)
 <p>
-$weight\_shape = (num\_attention\_heads * head\_dim, hidden\_size)$
+$weight\_shape = (hidden\_size, num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, num\_attention\_heads * head\_dim)$
+$input\_shape = (batch\_size, seqlen\_q, num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$output\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
+##### Tensor Core
+###### forward
+
 <p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim)$
+$FLOPs = 2 * batch\_size * seqlen\_q  * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
+
+</p>
+
+###### backword
+
+##### Cuda Core
+
+###### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+###### backword
+
+##### SFU
+
+###### forward
+
+<p>
+$FLOPs = 0$
+</p>
+
+###### backword
+
+<p>
+$FLOPs = 0$
+</p>
+
 
 #### attention_interface
 <p>
