@@ -409,9 +409,13 @@ $FLOPs=0$
 ##### Cuda Core
 ###### forward
 
+<p>
 $q_embed: 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim)$
+</p>
 
+<p>
 $k_embed: 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)$
+</p>
 
 ###### backward
 
@@ -431,7 +435,15 @@ $FLOPs=0$
 ###### forward
 
 <p>
-$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
+</p>
+
+<p>
+$+ 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
+</p>
+
+<p>
+$+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
 ###### backward
