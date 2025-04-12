@@ -394,9 +394,28 @@ $softmax: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 
 ###### backward
 
+#### self_attn Total
+##### Tensor Core
+###### forward
+
 <p>
-$Qwen2Attention total: 4 * GBS * SEQ\_LEN * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * SEQ\_LEN * (num\_attention\_heads * head\_dim) + 2 * GBS * SEQ\_LEN * (num\_key\_value\_heads * head\_dim) + 4 * GBS * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim + 2 * GBS * num\_attention\_heads * SEQ\_LEN^{2}$
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
+
+###### backward
+
+##### Cuda Core
+###### forward
+<p>
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) + 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim) + 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
+##### SFU
+###### forward
+<p>
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
 
 ### rotary_emb
 <p>
