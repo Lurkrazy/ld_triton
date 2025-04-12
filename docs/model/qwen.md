@@ -452,13 +452,21 @@ $+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_k
 ###### forward
 <p>
 $FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+</p>
 
+<p>
 $+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
 
+<p>
 $+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+</p>
 
+<p>
 $+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
+</p>
 
+<p>
 $+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
 </p>
 
