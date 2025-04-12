@@ -470,47 +470,85 @@ $+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
 $+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
 </p>
 
+###### backward
+
 ##### SFU
 ###### forward
 <p>
 $FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
+###### backward
+
 ### mlp(Qwen2MLP)
 #### gate_proj(Linear)
 <p>
-$weight\_shape = (hidden\_size, intermediate\_size)$
+$weight\_shape = (intermediate\_size, hidden\_size)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+$output\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
+</p>
+
+
+##### Tensor Core
+###### forward
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+###### backward
+
+<p>
+$dweight: 2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$dinput:  2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 #### up_proj(Linear)
 
 <p>
-$weight\_shape = (hidden\_size, intermediate\_size)$
+$weight\_shape = (intermediate\_size, hidden\_size)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+$output\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
+</p>
+
+
+##### Tensor Core
+###### forward
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+###### backward
+<p>
+$dweight: 2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$dinput:  2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
 
 #### act_fn(silu)
 
@@ -519,11 +557,38 @@ $silu(x) = \frac{x}{1 + e^{-x}}$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+$input\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 </p>
 
+
+##### Cuda Core
+###### forward
 <p>
-$f\_forward = 3 * GBS * SEQ\_LEN * intermediate\_size$
+$FLOPs = 2 * batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+###### backward
+
+<p>
+$FLOPs = 6 * batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+##### SFU
+###### forward
+<p>
+$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+###### backward
+
+<p>
+$FLOPs = 0$
+</p>
+
+or
+
+<p>
+$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
 </p>
 
 #### down_proj(Linear)
@@ -532,19 +597,71 @@ $weight\_shape = (intermediate\_size, hidden\_size)$
 </p>
 
 <p>
-$input\_shape = (GBS, SEQ\_LEN, intermediate\_size)$
+$input\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 </p>
 
 <p>
-$output\_shape = (GBS, SEQ\_LEN, hidden\_size)$
+$output\_shape = (batch\_size, seqlen\_q, hidden\_size)$
+</p>
+
+##### Tensor Core
+###### forward
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+###### backward
+<p>
+$dweight: 2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$f\_forward = 2 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size$
+$dinput:  2 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 <p>
-$mlp total: 6 * GBS * SEQ\_LEN * hidden\_size * intermediate\_size + 3 * GBS * SEQ\_LEN * intermediate\_size$
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+#### mlp Total
+##### Tensor Core
+###### forward
+<p>
+$FLOPs = 6 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+###### backward
+<p>
+$FLOPs = 12 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
+</p>
+
+##### Cuda Core
+###### forward
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+###### backward
+<p>
+$FLOPs = 6 * batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+##### SFU
+###### forward
+<p>
+$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+###### backward
+
+<p>
+$FLOPs = 0$
+</p>
+
+or
+
+<p>
+$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
 </p>
 
 ### input_layernorm(Qwen2RMSNorm)
