@@ -21,4 +21,4 @@ $\frac{\partial f(silu(X))}{\partial x_{ij}}$
 $= \frac{\partial f(silu(X))}{\partial silu(X)_{ij}} * \frac{\partial silu(X)_{ij}}{\partial x_{ij}}$
 </p>
 
-$= df_{ij} * (\frac{1 + x}{1 + e^{-x}} - \frac{x}{(1 + e^{-x})^2})$
+$= df_{ij} * (\frac{1 + x_{ij}}{1 + e^{-x_{ij}}} - \frac{x_{ij}}{(1 + e^{-x_{ij}})^2})$
