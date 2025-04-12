@@ -220,7 +220,7 @@ $FLOPs = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads 
 ###### forward
 
 <p>
-$batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+$FLOPs = batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 ###### backword
@@ -271,7 +271,7 @@ $FLOPs = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads 
 ###### forward
 
 <p>
-$batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+$FLOPs = batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 ###### backword
@@ -394,6 +394,38 @@ $softmax: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 
 ###### backward
 
+
+#### apply_rotary_pos_emb
+##### Tensor Core
+###### forward
+
+$FLOPs=0$
+
+###### backward
+
+$FLOPs=0$
+
+
+##### Cuda Core
+###### forward
+
+$q_embed: 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim)$
+
+$k_embed: 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)$
+
+###### backward
+
+##### SFU
+
+###### forward
+
+$FLOPs=0$
+
+###### backward
+
+$FLOPs=0$
+
+
 #### self_attn Total
 ##### Tensor Core
 ###### forward
@@ -407,19 +439,21 @@ $FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * h
 ##### Cuda Core
 ###### forward
 <p>
-$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) + 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim) + 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+
+$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+
+$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
+
+$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
 </p>
 
 ##### SFU
 ###### forward
 <p>
 $FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
-</p>
-
-
-### rotary_emb
-<p>
-$f\_forward = GBS * SEQ\_LEN * 3$
 </p>
 
 ### mlp(Qwen2MLP)
