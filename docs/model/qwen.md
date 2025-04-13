@@ -51,19 +51,6 @@ $batch\_size, seqlen\_q, seqlen\_kv$
 $weight\_shape = (vocab\_size, hidden\_size)$
 </p>
 
-### Tensor Core
-#### forward
-
-<p>
-$FLOPs = 0$
-</p>
-
-#### backword
-
-<p>
-$FLOPs = 0$
-</p>
-
 ### Cuda Core
 
 #### forward
@@ -78,35 +65,7 @@ $FLOPs = 0$
 $FLOPs = o(0)$
 </p>
 
-### SFU
-
-#### forward
-
-<p>
-$FLOPs = 0$
-</p>
-
-#### backword
-
-<p>
-$FLOPs = 0$
-</p>
-
-
 ## rotary_emb(Qwen2RotaryEmbedding)
-### Tensor Core
-#### forward
-
-<p>
-$FLOPs = 0$
-</p>
-
-#### backword
-
-<p>
-$FLOPs = 0$
-</p>
-
 ### Cuda Core
 
 #### forward
@@ -156,6 +115,18 @@ $input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_q, num\_attention\_heads * head\_dim)$
 </p>
 
+##### forward
+
+$output = input @ weight^{T} + bias$
+
+##### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
+
+$dbias_{j} = \sum_{i=0}{batch\_size * seqlen\_q - 1} doutput_{ij}$
+
 ##### Tensor Core
 ###### forward
 
@@ -164,6 +135,18 @@ $FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * h
 </p>
 
 ###### backword
+
+<p>
+$dinput:* batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
+
+<p>
+$dweight = 2 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim)$
+</p>
 
 ##### Cuda Core
 
@@ -174,19 +157,8 @@ $batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
 </p>
 
 ###### backword
-
-##### SFU
-
-###### forward
-
 <p>
-$FLOPs = 0$
-</p>
-
-###### backword
-
-<p>
-$FLOPs = 0$
+$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
 </p>
 
 #### k_proj(Linear)
@@ -206,6 +178,18 @@ $input\_shape = (batch\_size, seqlen\_kv, hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_kv, num\_key\_value\_heads * head\_dim)$
 </p>
 
+##### forward
+
+$output = input @ weight^{T} + bias$
+
+##### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
+
+$dbias_{j} = \sum_{i=0}{batch\_size * seqlen\_q - 1} doutput_{ij}$
+
 ##### Tensor Core
 ###### forward
 
@@ -214,6 +198,18 @@ $FLOPs = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads 
 </p>
 
 ###### backword
+
+<p>
+$dinput = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+<p>
+$dweight = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
 
 ##### Cuda Core
 
@@ -225,20 +221,9 @@ $FLOPs = batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 
 ###### backword
 
-##### SFU
-
-###### forward
-
 <p>
-$FLOPs = 0$
+$FLOPs = batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 </p>
-
-###### backword
-
-<p>
-$FLOPs = 0$
-</p>
-
 
 #### v_proj(Linear)
 <p>
@@ -257,6 +242,18 @@ $input\_shape = (batch\_size, seqlen\_kv , hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_kv , num\_key\_value\_heads * head\_dim)$
 </p>
 
+##### forward
+
+$output = input @ weight^{T} + bias$
+
+##### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
+
+$dbias_{j} = \sum_{i=0}{batch\_size * seqlen\_q - 1} doutput_{ij}$
+
 ##### Tensor Core
 ###### forward
 
@@ -265,6 +262,18 @@ $FLOPs = 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads 
 </p>
 
 ###### backword
+
+<p>
+$dinput: 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+<p>
+$dweight: 2 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)$
+</p>
 
 ##### Cuda Core
 
@@ -276,18 +285,8 @@ $FLOPs = batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 
 ###### backword
 
-##### SFU
-
-###### forward
-
 <p>
-$FLOPs = 0$
-</p>
-
-###### backword
-
-<p>
-$FLOPs = 0$
+$FLOPs = batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
 </p>
 
 #### o_proj(Linear)
@@ -303,6 +302,16 @@ $input\_shape = (batch\_size, seqlen\_q, num\_attention\_heads * head\_dim)$
 $output\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
+##### forward
+
+$output = input @ weight^{T}$
+
+##### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
+
 ##### Tensor Core
 ###### forward
 
@@ -314,30 +323,17 @@ $FLOPs = 2 * batch\_size * seqlen\_q  * hidden\_size * (num\_attention\_heads * 
 
 ###### backword
 
-##### Cuda Core
-
-###### forward
-
 <p>
-$FLOPs = 0$
+$dinput: 2 * batch\_size * seqlen\_q  * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
-###### backword
-
-##### SFU
-
-###### forward
-
 <p>
-$FLOPs = 0$
+$dweight: 2 * batch\_size * seqlen\_q  * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
 
-###### backword
-
 <p>
-$FLOPs = 0$
+$FLOPs = 4 * batch\_size * seqlen\_q  * hidden\_size * (num\_attention\_heads * head\_dim)$
 </p>
-
 
 #### attention_interface
 <p>
@@ -349,10 +345,41 @@ $k\_shape = (batch\_size, num\_key\_value\_heads, seqlen\_kv, head\_dim) -> (bat
 </p>
 
 <p>
-$v\_shape = (batch\_size, num\_key\_value\_heads, seqlen\_kv, head\_dim) -> (GBS, num\_attention\_heads, seqlen\_kv, head\_dim)$
+$v\_shape = (batch\_size, num\_key\_value\_heads, seqlen\_kv, head\_dim) -> (batch\_size, num\_attention\_heads, seqlen\_kv, head\_dim)$
+</p>
+
+<p>
+$output\_shape =(batch\_size, num\_attention\_heads, seqlen\_q, head\_dim)$
 </p>
 
 $softmax(x_{ij}) = \frac{exp^{x_{ij}-M}}{\sum_{k=0}^{seqlen\_kv-1}exp^{x_{ik}-M}}$
+##### forward
+
+
+
+$qk = q@k^{T} * scaling$
+
+$p = softmax(qk)$
+
+$pv = p@v$
+
+$attention(q, k, v, scaling) = softmax(\frac{q@k^{T}} * scaling) @ v$
+
+##### backward
+
+$qk = q@k^{T} * scaling$
+
+$p = softmax(qk)$
+
+$dp = doutput@v^{T}$
+
+$d = p*(dp - sum(doutput*output, dim=-1, keepdim=True)*scaling)$
+
+$dq = d@k$
+
+$dk = d^{T}@q$
+
+$dv = p^{T}@doutput$
 
 ##### Tensor Core
 ###### forward
@@ -365,10 +392,33 @@ $pv: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\
 </p>
 
 <p>
-$total: 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+$FLOPs = 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
 ###### backward
+<p>
+$qk: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$dp: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$dq: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$dk: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$dv: 2 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$FLOPs = 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
 
 ##### Cuda Core
 ###### forward
@@ -387,6 +437,22 @@ $total: 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 
 ###### backward
 
+<p>
+$scaling: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$softmax: 3 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$d: 5 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
+<p>
+$d: 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
 ##### SFU
 <p>
 $softmax: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
@@ -394,41 +460,29 @@ $softmax: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 
 ###### backward
 
+<p>
+$softmax: batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
 
 #### apply_rotary_pos_emb
-##### Tensor Core
-###### forward
+<p>
+$q\_embed = (q * cos) + (rotate\_half(q) * sin)$
+</p>
 
-$FLOPs=0$
-
-###### backward
-
-$FLOPs=0$
-
+<p>
+$k\_embed = (k * cos) + (rotate\_half(k) * sin)$
+</p>
 
 ##### Cuda Core
 ###### forward
 
 <p>
-$q_embed: 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim)$
+$q\_embed: 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim)$
 </p>
 
 <p>
-$k_embed: 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)$
+$k\_embed: 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)$
 </p>
-
-###### backward
-
-##### SFU
-
-###### forward
-
-$FLOPs=0$
-
-###### backward
-
-$FLOPs=0$
-
 
 #### self_attn Total
 ##### Tensor Core
@@ -762,7 +816,7 @@ $FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size$
 ##### backward
 
 <p>
-$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size$
+$FLOPs = 0$
 </p>
 
 ## Total
