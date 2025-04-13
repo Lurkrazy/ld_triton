@@ -222,6 +222,10 @@ $=\frac {\partial rmsnorm(γ)_{kj}}{\partial γ_{j}}$
 $=(\frac{1}{N}\sum_{q=0}^{N-1}x_{kq}^2)^{-\frac{1}{2}}.x_{kj}$
 </p>
 
+<p>
+$=rrms(x)_{k}.x_{kj}$
+</p>
+
 # 链式法则
 
 ## x链式法则一
