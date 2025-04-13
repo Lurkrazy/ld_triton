@@ -516,7 +516,7 @@ $FLOPs =$
 
 q_proj + o_proj
 <p>
-$ 8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
+$8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
 </p>
 
 k_proj + v_proj
@@ -531,16 +531,24 @@ $+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_
 
 ##### Cuda Core
 ###### forward
-<p>
-$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $ # q_proj
-</p> 
 
 <p>
-$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$ # k_proj + v_proj
+$FLOPs = $
 </p>
 
+q_proj
 <p>
-$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $ # attention_interface
+$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+</p> 
+
+k_proj + v_proj
+<p>
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+attention_interface
+<p>
+$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
 </p>
 
 <p>
