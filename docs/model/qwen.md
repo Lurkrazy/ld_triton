@@ -611,6 +611,16 @@ $input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 </p>
 
+#### forward
+
+$output = input @ weight^{T}$
+
+#### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
+
 
 ##### Tensor Core
 ###### forward
@@ -646,6 +656,15 @@ $input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 </p>
 
+#### forward
+
+$output = input @ weight^{T}$
+
+#### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
 
 ##### Tensor Core
 ###### forward
@@ -721,6 +740,16 @@ $input\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 $output\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
+#### forward
+
+$output = input @ weight^{T}$
+
+#### backward
+
+$dinput = doutput @ weight$
+
+$dweight = doutput^{T} @ input$
+
 ##### Tensor Core
 ###### forward
 <p>
@@ -743,28 +772,33 @@ $FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 #### mlp Total
 ##### Tensor Core
 ###### forward
+gate_proj + up_proj + down_proj
 <p>
 $FLOPs = 6 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 ###### backward
+gate_proj + up_proj + down_proj
 <p>
 $FLOPs = 12 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
 ##### Cuda Core
 ###### forward
+act_fn
 <p>
 $FLOPs = 2 * batch\_size * seqlen\_q * intermediate\_size$
 </p>
 
 ###### backward
+act_fn
 <p>
 $FLOPs = 6 * batch\_size * seqlen\_q * intermediate\_size$
 </p>
 
 ##### SFU
 ###### forward
+act_fn
 <p>
 $FLOPs = batch\_size * seqlen\_q * intermediate\_size$
 </p>
