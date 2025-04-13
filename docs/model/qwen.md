@@ -665,16 +665,28 @@ $FLOPs = batch\_size * seqlen\_q * intermediate\_size$
 </p>
 
 ### input_layernorm(Qwen2RMSNorm)
+#### forward
 <p>
-$y_{i} = \frac{x_{i}}{RMS(x)} * \gamma_{i}$
+$y_{ij} = \frac{x_{ij}} * {rrms(x_{ij})} * \gamma_{ij}$
 </p>
 
 <p>
-$RMS(x) = \sqrt {\epsilon + \frac{1}{n}\sum_{i=0}^{n-1}x_{i}^2}$
+$RMS(x_{i}) = \sqrt {\epsilon + \frac{1}{hidden\_size}\sum_{j=0}^{hidden\_size-1}x_{ij}^2}$
 </p>
 
 <p>
-$f\_forward = 4 * GBS * SEQ\_LEN * hidden\_size$
+$rrms(x_{ij}) = \frac{1}{\sqrt {\epsilon + \frac{1}{hidden\_size}\sum_{j=0}^{n-1}x_{ij}^2}}$
+</p>
+
+#### backward
+
+$dinput_x = doutput_{x} * rrms(x) * \gamma_{x} -\frac{x}{hidden\_size}*sum(rrms(x)*doutput * x)$
+
+#### Cuda Core
+##### forward
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
 </p>
 
 ## Total
