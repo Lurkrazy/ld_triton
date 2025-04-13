@@ -153,12 +153,12 @@ $FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * h
 ###### forward
 
 <p>
-$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
 </p>
 
 ###### backword
 <p>
-$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)$
 </p>
 
 #### k_proj(Linear)
@@ -538,6 +538,18 @@ $+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
 
 ###### backward
 
+<p>
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+</p>
+
+<p>
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+<p>
+$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+</p>
+
 ##### SFU
 ###### forward
 <p>
@@ -545,6 +557,10 @@ $FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
 ###### backward
+
+<p>
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
 
 ### mlp(Qwen2MLP)
 #### gate_proj(Linear)
