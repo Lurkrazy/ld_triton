@@ -939,6 +939,26 @@ attention_interface
 $+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
+##### backward
+<p>
+$FLOPs =$
+</p>
+
+q_proj + o_proj
+<p>
+$8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
+</p>
+
+k_proj + v_proj
+<p>
+$+ 8 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
+</p>
+
+attention_interface
+<p>
+$+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
 ### mlp
 #### Tensor Core
 ##### forward
