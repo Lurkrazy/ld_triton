@@ -667,11 +667,7 @@ $FLOPs = batch\_size * seqlen\_q * intermediate\_size$
 ### input_layernorm(Qwen2RMSNorm)
 #### forward
 <p>
-$y_{ij} = \frac{x_{ij}} * {rrms(x_{ij})} * \gamma_{ij}$
-</p>
-
-<p>
-$RMS(x_{i}) = \sqrt {\epsilon + \frac{1}{hidden\_size}\sum_{j=0}^{hidden\_size-1}x_{ij}^2}$
+$y_{ij} = rrms(x_{ij}) * \gamma_{ij}$
 </p>
 
 <p>
