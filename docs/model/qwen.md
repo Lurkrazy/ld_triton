@@ -678,8 +678,9 @@ save $rrms$ for backward
 
 #### backward
 
-
+<p>
 $dinput_{ij} = doutput_{ij} * rrms(x)_{i} * \gamma_{j} -\frac{x_{ij}}{hidden\_size}*\sum_{j=0}^{hidden\_size-1}(doutput_{ij} * x_{ij} * rrms(x)_{i} ^ {3} * \gamma_{j})$
+</p>
 
 <p>
 $d\gamma_{j}=\sum_{k=0}^{batch\_size * seqlen\_q} df_{kj} . rrms(x)_{k} .x_{kj}$
@@ -701,7 +702,9 @@ $dinput = 8 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\
 $d\gamma = 3 * batch\_size * seqlen\_q * hidden\_size$
 </p>
 
+<p>
 $FLOPs = 11 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+</p>
 
 #### SFU
 ##### forward
