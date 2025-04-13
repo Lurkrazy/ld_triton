@@ -667,22 +667,99 @@ $FLOPs = batch\_size * seqlen\_q * intermediate\_size$
 ### input_layernorm(Qwen2RMSNorm)
 #### forward
 <p>
-$y_{ij} = rrms(x_{ij}) * \gamma_{ij}$
+$y_{ij} = x_{ij} * rrms(x)_{i} * \gamma_{j}$
 </p>
 
 <p>
-$rrms(x_{ij}) = \frac{1}{\sqrt {\epsilon + \frac{1}{hidden\_size}\sum_{j=0}^{n-1}x_{ij}^2}}$
+$rrms(x)_{i} = \frac{1}{\sqrt {\epsilon + \frac{1}{hidden\_size}\sum_{j=0}^{hidden\_size-1}x_{ij}^2}}$
 </p>
+
+save $rrms$ for backward
 
 #### backward
 
-$dinput_x = doutput_{x} * rrms(x) * \gamma_{x} -\frac{x}{hidden\_size}*sum(rrms(x)*doutput * x)$
+
+$dinput_{ij} = doutput_{ij} * rrms(x)_{i} * \gamma_{j} -\frac{x_{ij}}{hidden\_size}*\sum_{j=0}^{hidden\_size-1}(doutput_{ij} * x_{ij} * rrms(x)_{i} ^ {3} * \gamma_{j})$
+
+<p>
+$d\gamma_{j}=\sum_{k=0}^{batch\_size * seqlen\_q} df_{kj} . rrms(x)_{k} .x_{kj}$
+</p>
 
 #### Cuda Core
 ##### forward
 
 <p>
 $FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+</p>
+
+##### backward
+<p>
+$dinput = 8 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+</p>
+
+<p>
+$d\gamma = 3 * batch\_size * seqlen\_q * hidden\_size$
+</p>
+
+$FLOPs = 11 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+
+#### SFU
+##### forward
+<p>
+$FLOPs = batch\_size * seqlen\_q$
+</p>
+
+##### backward
+
+<p>
+$FLOPs = 0$
+</p>
+
+### post_attention_layernorm(Qwen2RMSNorm)
+#### Cuda Core
+##### forward
+
+<p>
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+</p>
+
+##### backward
+<p>
+$dinput = 8 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+</p>
+
+<p>
+$d\gamma = 3 * batch\_size * seqlen\_q * hidden\_size$
+</p>
+
+<p>
+$FLOPs = 11 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q$
+</p>
+
+#### SFU
+##### forward
+<p>
+$FLOPs = batch\_size * seqlen\_q$
+</p>
+
+##### backward
+
+<p>
+$FLOPs = 0$
+</p>
+
+### residual
+#### Cuda Core
+##### forward
+
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size$
+</p>
+
+##### backward
+
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * hidden\_size$
 </p>
 
 ## Total
