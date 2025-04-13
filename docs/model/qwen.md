@@ -502,6 +502,18 @@ $+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_k
 
 ###### backward
 
+<p>
+$FLOPs = 8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
+</p>
+
+<p>
+$+ 8 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
+</p>
+
+<p>
+$+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+</p>
+
 ##### Cuda Core
 ###### forward
 <p>
