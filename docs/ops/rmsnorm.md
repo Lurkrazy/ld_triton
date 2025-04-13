@@ -12,7 +12,7 @@ $rrms(x)_i = \frac{1}{rms(x)_i} = \frac{1}{\sqrt{\frac{1}{N}\sum_{j=0}^{N-1}x_{i
 </p>
 
 <p>
-$rmsnorm(x)_{ij} = \frac{x_{ij}}{rms(x)_i}.γ_{j} = rrms(x)_i.x_{ij}.γ_{j}$
+$rmsnorm(x)_{ij} = \frac{x_{ij}}{rms(x)_i}.γ_{ij} = rrms(x)_i.x_{ij}.γ_{ij}$
 </p>
 
 $u = \frac{1}{N}\sum_{j=0}^{N-1}{x_{ij}^2}$
@@ -20,7 +20,7 @@ $u = \frac{1}{N}\sum_{j=0}^{N-1}{x_{ij}^2}$
 $rms(x)_i = \sqrt{u}$
 
 <p>
-$rmsnorm(x)_{ij} = \frac {x_{ij}}{\sqrt{u}}.γ_{j}$
+$rmsnorm(x)_{ij} = \frac {x_{ij}}{\sqrt{u}}.γ_{ij}$
 </p>
 
 # 求导
@@ -120,11 +120,11 @@ $=\frac{\frac {\partial x_{kl}}{\partial x_{ij}}.rms(x)_k-x_{kl}.\frac {\partial
 </p>
 
 <p>
-$=\frac{\frac {\partial x_{ij}}{\partial x_{ij}}.rms(x)_i-x_{ij}.\frac {\partial rms(x)_i}{\partial x_{ij}}}{(rms(x)_i)^2}.γ_{j}$
+$=\frac{\frac {\partial x_{ij}}{\partial x_{ij}}.rms(x)_i-x_{ij}.\frac {\partial rms(x)_i}{\partial x_{ij}}}{(rms(x)_i)^2}.γ_{ij}$
 </p>
 
 <p>
-$=(\frac {1}{rms(x)_i} + \frac{-x_{ij}.x_{ij}}{N.(rms(x)_i)^3}).γ_{j}$
+$=(\frac {1}{rms(x)_i} + \frac{-x_{ij}.x_{ij}}{N.(rms(x)_i)^3}).γ_{ij}$
 </p>
 
 ## x求导二
@@ -193,29 +193,29 @@ $=\frac{\partial rrms(x)_i}{\partial x_{ij}}.{x_{il}.γ_{l}}+rrms(x)_i.\frac {x_
 </p>
 
 <p>
-$=-\frac{x_{ij}^2}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.γ_{j} + (\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{j}$
+$=-\frac{x_{ij}^2}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.γ_{ij} + (\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij}$
 </p>
 
 ## γ求导
 
 <p>
-$\frac {\partial rmsnorm(γ)_{kl}}{\partial γ_{j}}$
+$\frac {\partial rmsnorm(γ)_{kl}}{\partial γ_{ij}}$
 </p>
 
 ### $l \neq j$
 
 <p>
-$\frac {\partial rmsnorm(γ)_{kl}}{\partial γ_{j}} = 0$
+$\frac {\partial rmsnorm(γ)_{kl}}{\partial γ_{ij}} = 0$
 </p>
 
 ### $l = j$
 
 <p>
-$\frac {\partial rmsnorm(γ)_{kl}}{\partial γ_{j}}$
+$\frac {\partial rmsnorm(γ)_{kl}}{\partial γ_{ij}}$
 </p>
 
 <p>
-$=\frac {\partial rmsnorm(γ)_{kj}}{\partial γ_{j}}$
+$=\frac {\partial rmsnorm(γ)_{kj}}{\partial γ_{ij}}$
 </p>
 
 <p>
@@ -245,23 +245,23 @@ $=\sum_{l=0}^{N-1}(df_{il} . \frac{\partial rmsnorm(x)_{il}}{\partial x_{ij}})$
 </p>
 
 <p>
-$=df_{ij} .(\frac {1}{rms(x)_i} + \frac{-x_{ij}.x_{ij}}{N.(rms(x)_i)^3}).γ_{j} + \sum_{l \neq j} df_{il} . \frac{-x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
+$=df_{ij} .(\frac {1}{rms(x)_i} + \frac{-x_{ij}.x_{ij}}{N.(rms(x)_i)^3}).γ_{ij} + \sum_{l \neq j} df_{il} . \frac{-x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
 </p>
 
 <p>
-$=df_{ij}.\frac {1}{rms(x)_i}.γ_{j} - \sum_{j = 0} ^ {N-1} df_{il} . \frac{x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
+$=df_{ij}.\frac {1}{rms(x)_i}.γ_{ij} - \sum_{j = 0} ^ {N-1} df_{il} . \frac{x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
 </p>
 
 <p>
-$=df_{ij}.\frac {1}{rms(x)_i}.γ_{j} - \sum_{j = 0} ^ {N-1} df_{il}.\frac{x_{ij}}{N.(rms(x)_i)^2}.rmsnorm(x_{il})$
+$=df_{ij}.\frac {1}{rms(x)_i}.γ_{ij} - \sum_{j = 0} ^ {N-1} df_{il}.\frac{x_{ij}}{N.(rms(x)_i)^2}.rmsnorm(x_{il})$
 </p>
 
 <p>
-$=df_{ij}.\frac {1}{rms(x)_i}.γ_{j} - \frac{x_{ij}}{N.(rms(x)_i)^2}.\sum_{j = 0} ^ {N-1} df_{il}.rmsnorm(x_{il})$
+$=df_{ij}.\frac {1}{rms(x)_i}.γ_{ij} - \frac{x_{ij}}{N.(rms(x)_i)^2}.\sum_{j = 0} ^ {N-1} df_{il}.rmsnorm(x_{il})$
 </p>
 
 <p>
-$=df_{ij}.{rrms(x)_i}.γ_{j} - \frac{x_{ij}.(rrms(x)_i)^2}{N}.\sum_{j = 0} ^ {N-1} df_{il}.rmsnorm(x_{il})$
+$=df_{ij}.{rrms(x)_i}.γ_{ij} - \frac{x_{ij}.(rrms(x)_i)^2}{N}.\sum_{j = 0} ^ {N-1} df_{il}.rmsnorm(x_{il})$
 </p>
 
 ## x链式法则二
@@ -285,15 +285,15 @@ $=\sum_{l=0}^{N-1}(df_{il} . \frac{\partial rmsnorm(x)_{il}}{\partial x_{ij}})$
 </p>
 
 <p>
-$=df_{ij}.[-\frac{x_{ij}^2}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.γ_{j} + (\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{j}] + \sum_{l \neq j}[-\frac{x_{ij}}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.x_{il}.γ_{l}]$
+$=df_{ij}.[-\frac{x_{ij}^2}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.γ_{ij} + (\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij}] + \sum_{l \neq j}[-\frac{x_{ij}}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.x_{il}.γ_{l}]$
 </p>
 
 <p>
-$=df_{ij}.(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{j} - \frac{x_{ij}}{N}\sum_{l}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.df_{il}.x_{il}.γ_{l} $
+$=df_{ij}.(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij} - \frac{x_{ij}}{N}\sum_{l}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.df_{il}.x_{il}.γ_{l} $
 </p>
 
 <p>
-$=df_{ij}.rrms(x)_i.γ_{j} - \frac{x_{ij}}{N}\sum_{l}rrms(x)_i^{3}.df_{il}.x_{il}.γ_{l} $
+$=df_{ij}.rrms(x)_i.γ_{ij} - \frac{x_{ij}}{N}\sum_{l}rrms(x)_i^{3}.df_{il}.x_{il}.γ_{l} $
 </p>
 
 ### 矩阵形式
@@ -307,20 +307,20 @@ $=df.rrms(X).γ-\frac{X}{N}.sum(rrms(X).df.X.γ, dim=-1, keepdim=True)$
 ### 元素形式
 
 <p>
-$\frac{\partial f(rmsnorm(γ))}{\partial γ_{j}}$
+$\frac{\partial f(rmsnorm(γ))}{\partial γ_{ij}}$
 </p>
 
 <p>
-$=\sum_{k=0}^{M-1}\sum_{l=0}^{N-1}(\frac{\partial f(rmsnorm(γ))}{\partial rmsnorm(γ)_{kl}} . \frac{\partial rmsnorm(γ)_{kl}}{\partial γ_{j}})$
+$=\sum_{k=0}^{M-1}\sum_{l=0}^{N-1}(\frac{\partial f(rmsnorm(γ))}{\partial rmsnorm(γ)_{kl}} . \frac{\partial rmsnorm(γ)_{kl}}{\partial γ_{ij}})$
 </p>
 
 <p>
-$=\sum_{k=0}^{M-1}\sum_{l=0}^{N-1}df_{kl} . \frac{\partial rmsnorm(γ)_{kl}}{\partial γ_{j}}$
+$=\sum_{k=0}^{M-1}\sum_{l=0}^{N-1}df_{kl} . \frac{\partial rmsnorm(γ)_{kl}}{\partial γ_{ij}}$
 </p>
 
 
 <p>
-$=\sum_{k=0}^{M-1}df_{kj} . \frac{\partial rmsnorm(γ)_{kj}}{\partial γ_{j}}$
+$=\sum_{k=0}^{M-1}df_{kj} . \frac{\partial rmsnorm(γ)_{kj}}{\partial γ_{ij}}$
 </p>
 
 
