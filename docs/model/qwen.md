@@ -917,281 +917,41 @@ $FLOPs = 0$
 </p>
 
 ## Total
-只考虑attention, linear(不包含bias), matmul
 ### self_attn
-
+#### Tensor Core
+##### forward
 <p>
-$q\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
+$FLOPs = $
 </p>
 
+q_proj + o_proj
 <p>
-$k\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
+$4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
 </p>
 
+k_proj + v_proj
 <p>
-$v\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
-</p>
+$+ 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
+</p> 
 
+attention_interface
 <p>
-$o\_proj: 2 * GBS * SEQ\_LEN * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$qk: 2 * GBS * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
-</p>
-
-<p>
-$pv: 2 * GBS  * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
-</p>
-
-<p>
-$self\_atten\_total: 4 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS  * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN^{2} * head\_dim$
+$+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
 ### mlp
+#### Tensor Core
+##### forward
+gate_proj + up_proj + down_proj
 <p>
-$gate\_proj: 2 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
+$FLOPs = 6 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
 
+##### backward
+gate_proj + up_proj + down_proj
 <p>
-$up\_proj: 2 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
+$FLOPs = 12 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
-
-<p>
-$down\_proj: 2 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
-</p>
-
-<p>
-$mlp\_total: 6 * GBS * SEQ\_LEN  * num\_hidden\_layers * hidden\_size * intermediate\_size$
-</p>
-
-# kv cache
-# prefill 阶段同forward
-# encoder 阶段
-## self_attn(Qwen2Attention)
-### q_proj(Linear)
-<p>
-$weight\_shape = (hidden\_size, num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$bias\_shape = (num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * hidden\_size * (num\_attention\_heads * head\_dim) + GBS * (num\_attention\_heads * head\_dim)$
-</p>
-
-### k_proj(Linear)
-<p>
-$weight\_shape = (hidden\_size, num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$bias\_shape = (num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * (num\_key\_value\_heads * head\_dim)$
-</p>
-
-### v_proj(Linear)
-<p>
-$weight\_shape = (hidden\_size, num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$bias\_shape = (num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * (num\_key\_value\_heads * head\_dim)$
-</p>
-
-### o_proj(Linear)
-<p>
-$weight\_shape = (num\_attention\_heads * head\_dim, hidden\_size)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * hidden\_size * (num\_attention\_heads * head\_dim)$
-</p>
-
-### attention_interface
-<p>
-$q\_shape = (GBS, num\_attention\_heads, 1, head\_dim)$
-</p>
-
-<p>
-$k\_shape = (GBS, num\_key\_value\_heads, SEQ\_LEN, head\_dim) -> (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
-</p>
-
-<p>
-$v\_shape = (GBS, num\_key\_value\_heads, SEQ\_LEN, head\_dim) -> (GBS, num\_attention\_heads, SEQ\_LEN, head\_dim)$
-</p>
-
-<p>
-$qk: 2 * GBS * SEQ\_LEN * num\_attention\_heads * head\_dim$
-</p>
-
-<p>
-$scaling: GBS * SEQ\_LEN * num\_attention\_heads$
-</p>
-
-<p>
-$softmax: GBS * SEQ\_LEN * num\_attention\_heads$
-</p>
-
-<p>
-$pv: 2 * GBS  * SEQ\_LEN * num\_attention\_heads * head\_dim$
-</p>
-
-<p>
-$total: 4 * GBS * SEQ\_LEN * num\_attention\_heads * head\_dim + 2 * GBS * SEQ\_LEN * num\_attention\_heads$
-</p>
-
-<p>
-$Qwen2Attention total: 4 * GBS * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * hidden\_size * (num\_key\_value\_heads * head\_dim) + GBS * (num\_attention\_heads * head\_dim) + 2 * GBS * (num\_key\_value\_heads * head\_dim) + 4 * GBS * SEQ\_LEN * num\_attention\_heads * head\_dim + 2 * GBS * SEQ\_LEN * num\_attention\_heads$
-</p>
-
-## mlp(Qwen2MLP)
-### gate_proj(Linear)
-<p>
-$weight\_shape = (hidden\_size, intermediate\_size)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, intermediate\_size)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * 1 * hidden\_size * intermediate\_size$
-</p>
-
-### up_proj(Linear)
-
-<p>
-$weight\_shape = (hidden\_size, intermediate\_size)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, intermediate\_size)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * 1 * hidden\_size * intermediate\_size$
-</p>
-
-### down_proj(Linear)
-<p>
-$weight\_shape = (intermediate\_size, hidden\_size)$
-</p>
-
-<p>
-$input\_shape = (GBS, 1, intermediate\_size)$
-</p>
-
-<p>
-$output\_shape = (GBS, 1, hidden\_size)$
-</p>
-
-<p>
-$f\_forward = 2 * GBS * 1 * hidden\_size * intermediate\_size$
-</p>
-
-<p>
-$mlp total: 6 * GBS * hidden\_size * intermediate\_size + 3 * GBS * intermediate\_size$
-</p>
-
-## Total
-只考虑attention, linear(不包含bias), matmul
-### self_attn
-
-<p>
-$q\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$k\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$v\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim)$
-</p>
-
-<p>
-$o\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim)$
-</p>
-
-<p>
-$qk: 2 * GBS * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN * head\_dim$
-</p>
-
-<p>
-$pv: 2 * GBS  * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN * head\_dim$
-</p>
-
-<p>
-$self\_atten\_total: 4 * GBS * num\_hidden\_layers * hidden\_size * (num\_attention\_heads * head\_dim) + 4 * GBS * num\_hidden\_layers * hidden\_size * (num\_key\_value\_heads * head\_dim) + 4 * GBS  * num\_hidden\_layers * num\_attention\_heads * SEQ\_LEN * head\_dim$
-</p>
-
-### mlp
-<p>
-$gate\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * intermediate\_size$
-</p>
-
-<p>
-$up\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * intermediate\_size$
-</p>
-
-<p>
-$down\_proj: 2 * GBS * num\_hidden\_layers * hidden\_size * intermediate\_size$
-</p>
-
-<p>
-$mlp\_total: 6 * GBS * num\_hidden\_layers * hidden\_size * intermediate\_size$
-</p>
-
 
 # References
 
