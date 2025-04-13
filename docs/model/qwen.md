@@ -489,77 +489,77 @@ $k\_embed: 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)$
 ###### forward
 
 <p>
-$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
+$FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $ # q_proj + o_proj
 </p>
 
 <p>
-$+ 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
+$+ 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $ # k_proj + v_proj
 </p>
 
 <p>
 $+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
-</p>
+</p> # attention_interface
 
 ###### backward
 
 <p>
-$FLOPs = 8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
+$FLOPs = 8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $  # q_proj + o_proj
 </p>
 
 <p>
-$+ 8 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
+$+ 8 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $ # k_proj + v_proj
 </p>
 
 <p>
-$+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
+$+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$ # attention_interface
 </p>
 
 ##### Cuda Core
 ###### forward
 <p>
-$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $ # q_proj
+</p> 
+
+<p>
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$ # k_proj + v_proj
 </p>
 
 <p>
-$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $ # attention_interface
 </p>
 
 <p>
-$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $ # q_embed
 </p>
 
 <p>
-$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
-</p>
-
-<p>
-$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
+$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $ # k_embed
 </p>
 
 ###### backward
 
 <p>
-$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $ # q_proj
 </p>
 
 <p>
-$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$ # k_proj + v_proj
 </p>
 
 <p>
-$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $ # attention_interface
 </p>
 
 ##### SFU
 ###### forward
 <p>
-$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$ # softmax
 </p>
 
 ###### backward
 
 <p>
-$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$ # softmax
 </p>
 
 ### mlp(Qwen2MLP)
