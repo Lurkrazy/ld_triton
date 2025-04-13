@@ -551,38 +551,50 @@ attention_interface
 $+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
 </p>
 
+q_embed
 <p>
-$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $ # q_embed
+$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
 </p>
 
+k_embed
 <p>
-$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $ # k_embed
+$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
 </p>
 
 ###### backward
 
 <p>
-$FLOPs = batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $ # q_proj
+$FLOPs = $
 </p>
 
+q_proj
 <p>
-$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$ # k_proj + v_proj
+$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
 </p>
 
+k_proj + v_proj
 <p>
-$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $ # attention_interface
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+attention_interface
+<p>
+$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
 </p>
 
 ##### SFU
 ###### forward
+
+softmax
 <p>
-$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$ # softmax
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
 ###### backward
 
+softmax
 <p>
-$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$ # softmax
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
 </p>
 
 ### mlp(Qwen2MLP)
