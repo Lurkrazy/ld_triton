@@ -94,19 +94,19 @@ $\frac {\partial rmsnorm(x)_{kl}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\frac {\partial x_{kl}}{\partial x_{ij}}.rms(x)_k-x_{kl}.\frac {\partial rms(x)_k}{\partial x_{ij}}}{(rms(x)_k)^2}.γ_{l}$
+$=\frac{\frac {\partial x_{kl}}{\partial x_{ij}}.rms(x)_k-x_{kl}.\frac {\partial rms(x)_k}{\partial x_{ij}}}{(rms(x)_k)^2}.γ_{il}$
 </p>
 
 <p>
-$=\frac{\frac {\partial x_{il}}{\partial x_{ij}}.rms(x)_i-x_{il}.\frac {\partial rms(x)_i}{\partial x_{ij}}}{(rms(x)_i)^2}.γ_{l}$
+$=\frac{\frac {\partial x_{il}}{\partial x_{ij}}.rms(x)_i-x_{il}.\frac {\partial rms(x)_i}{\partial x_{ij}}}{(rms(x)_i)^2}.γ_{il}$
 </p>
 
 <p>
-$=\frac{-x_{il}.\frac {\partial rms(x)_i}{\partial x_{ij}}}{(rms(x)_i)^2}.γ_{l}$
+$=\frac{-x_{il}.\frac {\partial rms(x)_i}{\partial x_{ij}}}{(rms(x)_i)^2}.γ_{il}$
 </p>
 
 <p>
-$=\frac{-x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
+$=\frac{-x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{il}$
 </p>
 
 #### $k = i, l = j$
@@ -116,7 +116,7 @@ $\frac {\partial rmsnorm(x)_{kl}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\frac {\partial x_{kl}}{\partial x_{ij}}.rms(x)_k-x_{kl}.\frac {\partial rms(x)_k}{\partial x_{ij}}}{(rms(x)_k)^2}.γ_{l}$
+$=\frac{\frac {\partial x_{kl}}{\partial x_{ij}}.rms(x)_k-x_{kl}.\frac {\partial rms(x)_k}{\partial x_{ij}}}{(rms(x)_k)^2}.γ_{il}$
 </p>
 
 <p>
@@ -159,19 +159,19 @@ $\frac {\partial rmsnorm(x)_{kl}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\partial rrms(x)_k.x_{kl}.γ_{l}}{\partial x_{ij}}$
+$=\frac{\partial rrms(x)_k.x_{kl}.γ_{il}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\partial rrms(x)_i.x_{il}.γ_{l}}{\partial x_{ij}}$
+$=\frac{\partial rrms(x)_i.x_{il}.γ_{il}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\partial rrms(x)_i}{\partial x_{ij}}.{x_{il}.γ_{l}}+rrms(x)_i.\frac {x_{il}}{\partial x_{ij}}$
+$=\frac{\partial rrms(x)_i}{\partial x_{ij}}.{x_{il}.γ_{il}}+rrms(x)_i.\frac {x_{il}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=-\frac{x_{ij}}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.x_{il}.γ_{l}$
+$=-\frac{x_{ij}}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.x_{il}.γ_{il}$
 </p>
 
 #### $k = i, l \neq j$
@@ -181,15 +181,15 @@ $\frac {\partial rmsnorm(x)_{kl}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\partial rrms(x)_k.x_{kl}.γ_{l}}{\partial x_{ij}}$
+$=\frac{\partial rrms(x)_k.x_{kl}.γ_{il}}{\partial x_{ij}}$
 </p>
 
 <p>
-$=\frac{\partial rrms(x)_i.x_{il}.γ_{l}}{\partial x_{ij}}$
+$=\frac{\partial rrms(x)_i.x_{il}.γ_{il}}{\partial x_{ij}}$
 <p>
 
 <p>
-$=\frac{\partial rrms(x)_i}{\partial x_{ij}}.{x_{il}.γ_{l}}+rrms(x)_i.\frac {x_{il}}{\partial x_{ij}}$
+$=\frac{\partial rrms(x)_i}{\partial x_{ij}}.{x_{il}.γ_{il}}+rrms(x)_i.\frac {x_{il}}{\partial x_{ij}}$
 </p>
 
 <p>
@@ -245,11 +245,11 @@ $=\sum_{l=0}^{N-1}(df_{il} . \frac{\partial rmsnorm(x)_{il}}{\partial x_{ij}})$
 </p>
 
 <p>
-$=df_{ij} .(\frac {1}{rms(x)_i} + \frac{-x_{ij}.x_{ij}}{N.(rms(x)_i)^3}).γ_{ij} + \sum_{l \neq j} df_{il} . \frac{-x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
+$=df_{ij} .(\frac {1}{rms(x)_i} + \frac{-x_{ij}.x_{ij}}{N.(rms(x)_i)^3}).γ_{ij} + \sum_{l \neq j} df_{il} . \frac{-x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{il}$
 </p>
 
 <p>
-$=df_{ij}.\frac {1}{rms(x)_i}.γ_{ij} - \sum_{j = 0} ^ {N-1} df_{il} . \frac{x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{l}$
+$=df_{ij}.\frac {1}{rms(x)_i}.γ_{ij} - \sum_{j = 0} ^ {N-1} df_{il} . \frac{x_{il}.x_{ij}}{N.(rms(x)_i)^3}.γ_{il}$
 </p>
 
 <p>
@@ -285,15 +285,15 @@ $=\sum_{l=0}^{N-1}(df_{il} . \frac{\partial rmsnorm(x)_{il}}{\partial x_{ij}})$
 </p>
 
 <p>
-$=df_{ij}.[-\frac{x_{ij}^2}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.γ_{ij} + (\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij}] + \sum_{l \neq j}[-\frac{x_{ij}}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.x_{il}.γ_{l}]$
+$=df_{ij}.[-\frac{x_{ij}^2}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.γ_{ij} + (\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij}] + \sum_{l \neq j}[-\frac{x_{ij}}{N}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.x_{il}.γ_{il}]$
 </p>
 
 <p>
-$=df_{ij}.(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij} - \frac{x_{ij}}{N}\sum_{l}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.df_{il}.x_{il}.γ_{l} $
+$=df_{ij}.(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{1}{2}}.γ_{ij} - \frac{x_{ij}}{N}\sum_{l}(\frac{1}{N}\sum_{q=0}^{N-1}x_{iq}^2)^{-\frac{3}{2}}.df_{il}.x_{il}.γ_{il} $
 </p>
 
 <p>
-$=df_{ij}.rrms(x)_i.γ_{ij} - \frac{x_{ij}}{N}\sum_{l}rrms(x)_i^{3}.df_{il}.x_{il}.γ_{l} $
+$=df_{ij}.rrms(x)_i.γ_{ij} - \frac{x_{ij}}{N}\sum_{l}rrms(x)_i^{3}.df_{il}.x_{il}.γ_{il} $
 </p>
 
 ### 矩阵形式
