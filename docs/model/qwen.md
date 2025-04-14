@@ -94,7 +94,7 @@ $FLOPs = hidden\_size * seqlen$
 $FLOPs = 0$
 </p>
 
-## layers(Qwen2DecoderLayer * num_hidden_layers )
+## layers(Qwen2DecoderLayer * num_hidden_layers)
 ## Qwen2DecoderLayer
 ### self_attn(Qwen2Attention)
 #### q_proj(Linear)
@@ -354,8 +354,6 @@ $output\_shape =(batch\_size, num\_attention\_heads, seqlen\_q, head\_dim)$
 
 $softmax(x_{ij}) = \frac{exp^{x_{ij}-M}}{\sum_{k=0}^{seqlen\_kv-1}exp^{x_{ik}-M}}$
 ##### forward
-
-
 
 $qk = q@k^{T} * scaling$
 
@@ -915,6 +913,58 @@ $FLOPs = 0$
 
 ## Total
 ### Tensor Core
+#### forward
+self_attn Total
+<p>
+$FLOPs = $
+</p>
+
+q_proj + o_proj
+<p>
+$+ num\_hidden\_layers * (4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim)) $
+</p>
+
+k_proj + v_proj
+<p>
+$+ num\_hidden\_layers * (4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)) $
+</p> 
+
+attention_interface
+<p>
+$+ num\_hidden\_layers * (4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv)$
+</p>
+
+mlp Total
+gate_proj + up_proj + down_proj
+<p>
+$+ num\_hidden\_layers * (6 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size)$
+</p>
+
+#### backward
+self_attn Total
+<p>
+$FLOPs = $
+</p>
+q_proj + o_proj
+<p>
+$num\_hidden\_layers * (8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim)) $
+</p>
+
+k_proj + v_proj
+<p>
+$+ num\_hidden\_layers * (8 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim)) $
+</p>
+
+attention_interface
+<p>
+$+ num\_hidden\_layers * (10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv)$
+</p>
+
+mlp Total
+gate_proj + up_proj + down_proj 
+<p>
+$+ num\_hidden\_layers * (12 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size)$
+</p>
 
 ### Cuda Core
 #### forward
@@ -929,162 +979,132 @@ rotary_emb
 $+ hidden\_size * seqlen$
 
 layers
-$$
-
-
-### self_attn Total
-#### Tensor Core
-##### forward
-<p>
-$FLOPs = $
-</p>
-
-q_proj + o_proj
-<p>
-$4 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
-</p>
-
-k_proj + v_proj
-<p>
-$+ 4 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
-</p> 
-
-attention_interface
-<p>
-$+ 4 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
-</p>
-
-##### backward
-<p>
-$FLOPs =$
-</p>
-
-q_proj + o_proj
-<p>
-$8 * batch\_size * seqlen\_q * hidden\_size * (num\_attention\_heads * head\_dim) $
-</p>
-
-k_proj + v_proj
-<p>
-$+ 8 * batch\_size * seqlen\_kv *  hidden\_size * (num\_key\_value\_heads * head\_dim) $
-</p>
-
-attention_interface
-<p>
-$+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
-</p>
-
-#### Cuda Core
-##### forward
-<p>
-$FLOPs = $
-</p>
-
+self_attn Total
 q_proj
 <p>
-$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+$+ num\_hidden\_layers * (batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim)) $
 </p> 
 
 k_proj + v_proj
 <p>
-$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+$+ num\_hidden\_layers * (2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim))$
 </p>
 
 attention_interface
 <p>
-$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+$+ num\_hidden\_layers * (4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv) $
 </p>
 
 q_embed
 <p>
-$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
+$+ num\_hidden\_layers * (3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim)) $
 </p>
 
 k_embed
 <p>
-$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
+$+ num\_hidden\_layers * (3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)) $
 </p>
 
-##### backward
+mlp Total
+act_fn
 <p>
-$FLOPs = $
+$+ num\_hidden\_layers * (2 * batch\_size * seqlen\_q * intermediate\_size)$
 </p>
 
+input_layernorm Total
+<p>
+$+ num\_hidden\_layers * (4 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q)$
+</p>
+
+post_attention_layernorm Total
+<p>
+$+ num\_hidden\_layers * (4 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q)$
+</p>
+
+residual Total
+<p>
+$+ num\_hidden\_layers * (2 * batch\_size * seqlen\_q * hidden\_size)$
+</p>
+
+#### backward
+$FLOPs = $
+
+embed_tokens
+$o(0)$
+
+rotary_emb
+$+ 0$
+
+self_attn Total
 q_proj
 <p>
-$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+$+ num\_hidden\_layers * (batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim))$
 </p>
 
 k_proj + v_proj
 <p>
-$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+$+ num\_hidden\_layers * (2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim))$
 </p>
 
 attention_interface
 <p>
-$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+$+ num\_hidden\_layers * (9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv)$
 </p>
 
-#### SFU
-##### forward
+mlp Total
+act_fn
+<p>
+$+ num\_hidden\_layers * (6 * batch\_size * seqlen\_q * intermediate\_size)$
+</p>
+
+input_layernorm Total
+<p>
+$+ num\_hidden\_layers * (11 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q)$
+</p>
+
+post_attention_layernorm Total
+<p>
+$+ num\_hidden\_layers * (11 * batch\_size * seqlen\_q * hidden\_size + 2 * batch\_size * seqlen\_q)$
+</p>
+
+residual Total
+<p>
+$+ 0$
+</p>
+
+### SFU
+#### forward
+
+<p>
+$FLOPs = $
+</p>
+
+rotary_emb
+<p>
+$+ hidden\_size * seqlen$
+</p>
+
+self_attn Total
 softmax
 <p>
-$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+$num\_hidden\_layers * (batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv)$
 </p>
 
-##### backward
-
-softmax
-<p>
-$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
-</p>
-
-### mlp
-#### Tensor Core
-##### forward
-gate_proj + up_proj + down_proj
-<p>
-$FLOPs = 6 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
-</p>
-
-##### backward
-gate_proj + up_proj + down_proj
-<p>
-$FLOPs = 12 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
-</p>
-
-#### Cuda Core
-##### forward
+mlp Total
 act_fn
 <p>
-$FLOPs = 2 * batch\_size * seqlen\_q * intermediate\_size$
+$+ num\_hidden\_layers * (batch\_size * seqlen\_q * intermediate\_size)$
 </p>
 
-##### backward
-act_fn
+input_layernorm Total
 <p>
-$FLOPs = 6 * batch\_size * seqlen\_q * intermediate\_size$
+$+ num\_hidden\_layers * (batch\_size * seqlen\_q)$
 </p>
 
-#### SFU
-##### forward
-act_fn
+post_attention_layernorm Total
 <p>
-$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
+$+ num\_hidden\_layers * (batch\_size * seqlen\_q)$
 </p>
-
-##### backward
-
-<p>
-$FLOPs = 0$
-</p>
-
-or
-
-<p>
-$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
-</p>
-
 
 # References
 
