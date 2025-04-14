@@ -487,8 +487,6 @@ $k\_embed: 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim)$
 #### self_attn Total
 ##### Tensor Core
 ###### forward
-
-
 <p>
 $FLOPs = $
 </p>
@@ -531,7 +529,6 @@ $+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_
 
 ##### Cuda Core
 ###### forward
-
 <p>
 $FLOPs = $
 </p>
@@ -917,7 +914,25 @@ $FLOPs = 0$
 </p>
 
 ## Total
-### self_attn
+### Tensor Core
+
+### Cuda Core
+#### forward
+
+$FLOPs = $
+
+embed_tokens
+
+$0$
+
+rotary_emb
+$+ hidden\_size * seqlen$
+
+layers
+$$
+
+
+### self_attn Total
 #### Tensor Core
 ##### forward
 <p>
@@ -959,6 +974,71 @@ attention_interface
 $+ 10 * batch\_size * (num\_attention\_heads * head\_dim) * seqlen\_q * seqlen\_kv$
 </p>
 
+#### Cuda Core
+##### forward
+<p>
+$FLOPs = $
+</p>
+
+q_proj
+<p>
+$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+</p> 
+
+k_proj + v_proj
+<p>
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+attention_interface
+<p>
+$+ 4 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+</p>
+
+q_embed
+<p>
+$+ 3 * batch\_size * seqlen\_q * (num\_attention\_heads * head\_dim) $
+</p>
+
+k_embed
+<p>
+$+ 3 * batch\_size * seqlen\_kv * (num\_key\_value\_heads * head\_dim) $
+</p>
+
+##### backward
+<p>
+$FLOPs = $
+</p>
+
+q_proj
+<p>
+$batch\_size * seqlen\_q  * (num\_attention\_heads * head\_dim) $
+</p>
+
+k_proj + v_proj
+<p>
+$+ 2 * batch\_size * seqlen\_kv  * (num\_key\_value\_heads * head\_dim)$
+</p>
+
+attention_interface
+<p>
+$+ 9 * batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv $
+</p>
+
+#### SFU
+##### forward
+softmax
+<p>
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
+##### backward
+
+softmax
+<p>
+$FLOPs = batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv$
+</p>
+
 ### mlp
 #### Tensor Core
 ##### forward
@@ -972,6 +1052,39 @@ gate_proj + up_proj + down_proj
 <p>
 $FLOPs = 12 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 </p>
+
+#### Cuda Core
+##### forward
+act_fn
+<p>
+$FLOPs = 2 * batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+##### backward
+act_fn
+<p>
+$FLOPs = 6 * batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+#### SFU
+##### forward
+act_fn
+<p>
+$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
+##### backward
+
+<p>
+$FLOPs = 0$
+</p>
+
+or
+
+<p>
+$FLOPs = batch\_size * seqlen\_q * intermediate\_size$
+</p>
+
 
 # References
 
