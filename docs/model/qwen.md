@@ -606,11 +606,11 @@ $input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 </p>
 
-#### forward
+##### forward
 
 $output = input @ weight^{T}$
 
-#### backward
+##### backward
 
 $dinput = doutput @ weight$
 
@@ -651,11 +651,11 @@ $input\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 $output\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 </p>
 
-#### forward
+##### forward
 
 $output = input @ weight^{T}$
 
-#### backward
+##### backward
 
 $dinput = doutput @ weight$
 
@@ -682,9 +682,18 @@ $FLOPs = 4 * batch\_size * seqlen\_q * hidden\_size * intermediate\_size$
 
 
 #### act_fn(silu)
-
+##### forward
 <p>
 $silu(x) = \frac{x}{1 + e^{-x}}$
+</p>
+
+##### backward
+<p>
+$silu(x) = \frac{x}{1 + e^{-x}}$
+</p>
+
+<p>
+$dinput_{ij} = doutput_{ij} * (\frac{1 + x_{ij}}{1 + e^{-x}} - \frac{x_{ij}}{(1 + e^{-x})^{2}})$
 </p>
 
 <p>
@@ -735,11 +744,11 @@ $input\_shape = (batch\_size, seqlen\_q, intermediate\_size)$
 $output\_shape = (batch\_size, seqlen\_q, hidden\_size)$
 </p>
 
-#### forward
+##### forward
 
 $output = input @ weight^{T}$
 
-#### backward
+##### backward
 
 $dinput = doutput @ weight$
 
@@ -1085,12 +1094,14 @@ $+ hidden\_size * seqlen$
 </p>
 
 self_attn Total
+
 softmax
 <p>
 $num\_hidden\_layers * (batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv)$
 </p>
 
 mlp Total
+
 act_fn
 <p>
 $+ num\_hidden\_layers * (batch\_size * seqlen\_q * intermediate\_size)$
@@ -1105,6 +1116,33 @@ post_attention_layernorm Total
 <p>
 $+ num\_hidden\_layers * (batch\_size * seqlen\_q)$
 </p>
+
+#### backward
+<p>
+$FLOPs = $
+</p>
+
+self_attn Total
+
+softmax
+<p>
+$num\_hidden\_layers * (batch\_size * num\_attention\_heads * seqlen\_q * seqlen\_kv)$
+</p>
+
+mlp Total
+
+act_fn
+<p>
+$+ 0$
+</p>
+
+input_layernorm Total
+<p>
+$+ 0$
+</p>
+
+post_attention_layernorm Total
+$+ 0$
 
 # References
 
