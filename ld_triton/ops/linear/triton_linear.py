@@ -115,6 +115,8 @@ def _triton_bias_kernel(
 class _triton_linear(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor):
+        shape = input.shape
+        input = input.view(-1, shape[-1])
         M, K = input.shape
         N, K = weight.shape
         output = torch.empty((M, N), device = input.device, dtype=input.dtype)
@@ -126,12 +128,20 @@ class _triton_linear(torch.autograd.Function):
             weight.stride(1), weight.stride(0), 
             output.stride(0), output.stride(1),
         )
+        input = input.view(*shape)
+        output = output.view(*shape[:-1], N)
         ctx.save_for_backward(input, weight, bias)
         return output
     
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         input, weight, bias = ctx.saved_tensors
+
+        input_shape = input.shape
+        grad_output_shape = grad_output.shape
+        input = input.view(-1, input_shape[-1])
+        grad_output = grad_output.view(-1, grad_output.shape[-1])
+
         grad_input, grad_weight, grad_bias = None, None, None
         M, N = grad_output.shape
         if input.requires_grad:
@@ -169,7 +179,9 @@ class _triton_linear(torch.autograd.Function):
                 BLOCK_SIZE
             )
 
-            grad_output = grad_output.view(*shape)
+        input = input.view(*input_shape)
+        grad_input = grad_input.view(*input_shape)
+        grad_output = grad_output.view(*grad_output_shape)
         return grad_input, grad_weight, grad_bias
 
 

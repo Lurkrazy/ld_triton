@@ -266,9 +266,9 @@ class _streamk_linear(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         input, weight, bias = ctx.saved_tensors
+        
         input_shape = input.shape
         grad_output_shape = grad_output.shape
-
         input = input.view(-1, input_shape[-1])
         grad_output = grad_output.view(-1, grad_output.shape[-1])
 
@@ -323,16 +323,16 @@ streamk_linear = _streamk_linear.apply
 
 
 if __name__ == '__main__':
-    torch.set_printoptions(profile='full')
-    # M = 16 * 8
-    # in_features = 16 * 8
-    # out_features = 16 * 7
-    M = 2048
-    in_features = 8192
-    out_features = 29696
+    # torch.set_printoptions(profile='full')
+    M = 16 * 8
+    in_features = 16 * 8
+    out_features = 16 * 7
+    # M = 2048
+    # in_features = 8192
+    # out_features = 29696
 
     factory_kwargs = {'device': 'cuda', 'dtype': torch.float16}
-    input = torch.randn(M, in_features, requires_grad=True, **factory_kwargs)
+    input = torch.randn(M, 1, in_features, requires_grad=True, **factory_kwargs)
     weight = torch.randn(out_features, in_features, requires_grad=True, **factory_kwargs)
     bias = torch.randn(out_features, requires_grad=True, **factory_kwargs)
 
