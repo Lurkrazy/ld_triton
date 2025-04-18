@@ -307,21 +307,37 @@ $InstructionShape=(MmaM， MmaN, MmaK)=(16, 8, 16)$
 
 $WarpShape=(WarpTileM, WarpTileN, WarpTileK)=(num_MmaM * MmaM, num_MmaN, num_MmaK)$
 
+<p>
 $FLOPs\_per\_SM = 2 * WarpTileM * WarpTileN * WarpTileK$
+</p>
 
+<p>
 $clcs = \frac{FLOPs\_per\_SM}{6780}$
+</p>
 
+<p>
 $Arithmetic\_intensity = $ 
+</p>
 
+<p>
 $\frac{FLOPs\_per\_SM} {2 * (WarpTileM * WarpTileK + WarpTileK * WarpTileN + (num\_MmaK) * WarpTileM * WarpTileN)}$
+</p>
 
+<p>
 $\frac{WarpTileM * WarpTileN * WarpTileK}{WarpTileM * WarpTileK + WarpTileK * WarpTileN + num\_MmaK * WarpTileM * MmaN}$
+</p>
 
+<p>
 $=\frac{1}{1 / WarpTileM + 1 / WarpTileN + num\_MmaK / WarpTileK}$
+</p>
 
+<p>
 $=\frac{1}{1 / WarpTileM + 1 / WarpTileN + 1 / MmaK}$
+</p>
 
+<p>
 $Bytes\_per\_clc = \frac{FLOPs\_per\_SM}{Arithmetic\_intensity}/clcs$
+</p>
 
 ```
 InstructionShape = [
