@@ -407,9 +407,13 @@ ldmatrix.sync.aligned.m8n8.x2.trans.shared.b16 {d0, d1}, [addr];
 ```
 数据在 Shared Memory 中, Shared Memory Bandwidth 是 128 bytes/clock per SM
 
+<p>
 $WarpShape=(WarpTileM, WarpTileN, WarpTileK)=(num\_MmaM * MmaM, num\_MmaN, num\_MmaK)$
+</p>
 
+<p>
 $ThreadblockShape=(CtaTileM, CtaTileN, CtaTileK)=(num\_WarpTileM, num\_WarpTileN, num\_WarpTileK)$
+</p>
 
 <p>
 $FLOPs\_per\_SM = 2 * CtaTileM * CtaTileN * CtaTileK$
