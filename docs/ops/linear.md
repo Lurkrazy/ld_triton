@@ -298,7 +298,7 @@ mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32
   {%Rc0, %Rc1, %Rc2, %Rc3};
 ```
 
-数据在Register File中， 
+数据在Register File中
 
 Shared Memory Bandwidth 是 128 bytes/clock per SM, 没有找到Register File Bandwidth. 一般情况下Register File Bandwidth 比 Shared Memory Bandwidth 高一个数量级
 
@@ -315,11 +315,31 @@ $clcs = \frac{FLOPs\_per\_SM}{6780}$
 </p>
 
 <p>
-$Arithmetic\_intensity=$ 
+$Bytes\_per\_SM = WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK * WarpTileM * MmaN$
 </p>
 
 <p>
-$\frac{FLOPs\_per\_SM} {WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK * WarpTileM * WarpTileN}$
+$= WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * WarpTileM * MmaN$
+</p>
+
+<p>
+$Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clcs}$
+</p>
+
+<p>
+$= \frac{Bytes\_per\_SM}{FLOPs\_per\_SM / 6780}$
+</p>
+
+<p>
+$= \frac{6780}{Arithmetic\_intensity}$
+</p>
+
+<p>
+$Arithmetic\_intensity$ 
+</p>
+
+<p>
+$=\frac{FLOPs\_per\_SM} {Bytes\_per\_SM}$
 </p>
 
 <p>
@@ -334,9 +354,7 @@ $=\frac{1}{1 / 2WarpTileM + 1 / 2WarpTileN + num\_MmaK / WarpTileK}$
 $=\frac{1}{1 / 2WarpTileM + 1 / 2WarpTileN + 1 / MmaK}$
 </p>
 
-<p>
-$Bytes\_per\_clc = \frac{FLOPs\_per\_SM}{Arithmetic\_intensity}/clcs$
-</p>
+
 
 ```
 InstructionShape = [
@@ -361,7 +379,8 @@ for (MmaM, MmaN, MmaK) in InstructionShape:
         FLOPs_per_SM = 2 * WarpTileM * WarpTileN * WarpTileK
         clcs = FLOPs_per_SM / 6780
         Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / MmaK)
-        Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
+        # Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
+        Bytes_per_clc = (WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * WarpTileK / MmaK * WarpTileM * WarpTileN) / clcs
         print(f'{(WarpTileM, WarpTileN, WarpTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
 
 ```
@@ -378,7 +397,87 @@ for (MmaM, MmaN, MmaK) in InstructionShape:
 | (32, 32, 64)  | (16, 8, 16)      | 10.667               | 635.625       | 19.332 |
 | (64, 32, 32)  | (16, 8, 16)      | 11.636               | 582.656       | 19.332 |
 
+## Warp-level GEMM (warp-level parallelism)
+```
+ldmatrix.sync.aligned.m8n8.x4.shared.b16 {d0, d1, d2, d3}, [addr];
 
+ldmatrix.sync.aligned.m8n8.x2.trans.shared.b16 {d0, d1}, [addr];
+```
+数据在 Shared Memory 中, Shared Memory Bandwidth 是 128 bytes/clock per SM
+
+$WarpShape=(WarpTileM, WarpTileN, WarpTileK)=(num\_MmaM * MmaM, num\_MmaN, num\_MmaK)$
+
+$ThreadblockShape=(CtaTileM, CtaTileN, CtaTileK)=(num\_WarpTileM, num\_WarpTileN, num\_WarpTileK)$
+
+<p>
+$FLOPs\_per\_SM = 2 * CtaTileM * CtaTileN * CtaTileK$
+</p>
+
+<p>
+$clcs = \frac{FLOPs\_per\_SM}{6780}$
+</p>
+
+<p>
+$Arithmetic\_intensity=$ 
+</p>
+
+<p>
+$\frac{FLOPs\_per\_SM} {num\_WarpTileN * CtaTileM * CtaTileK + num\_WarpTileM * CtaTileK * CtaTileN + 2 * CtaTileM * CtaTileN}$
+</p>
+
+<p>
+$\frac{2 * CtaTileM * CtaTileN * CtaTileK}{(CtaTileN / WarpTileN) * CtaTileM * CtaTileK + (CtaTileM / WarpTileM) * CtaTileK * CtaTileN + 2 * CtaTileM * CtaTileN}$
+</p>
+
+<p>
+$=\frac{1}{1 / 2WarpTileN + 1 / 2WarpTileM + 1 / CtaTileK}$
+</p>
+
+<p>
+$Bytes\_per\_clc = \frac{FLOPs\_per\_SM}{Arithmetic\_intensity}/clcs$
+</p>
+
+```
+InstructionShape = [
+    (16, 8, 16),
+]
+
+WarpShape_and_ThreadblockShape = [
+    ((16, 8, 16), (16, 8, 16)),
+    ((64, 64, 32), (64, 128, 32)),
+    ((64, 64, 32), (64, 256, 32)),
+    ((64, 64, 32), (128, 128, 32)),
+    ((64, 64, 32), (128, 64, 32)),
+    ((32, 128, 32), (64, 128, 32)),
+    ((16, 64, 32), (64, 64, 32)),
+    ((16, 128, 32), (64, 128, 32)),
+    ((32, 32, 32), (64, 64, 32)),
+    ((64, 64, 64), (128, 128, 64)),
+    ((32, 32, 64), (64, 64, 64)),
+    ((64, 32, 32), (128, 64, 32)),
+    ((32, 64, 32), (64, 64, 32))
+]
+
+for ((WarpTileM, WarpTileN, WarpTileK), (CtaTileM, CtaTileN, CtaTileK)) in WarpShape_and_ThreadblockShape:
+    FLOPs_per_SM = 2 * CtaTileM * CtaTileN * CtaTileK
+    clcs = FLOPs_per_SM / 6780
+    Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / CtaTileK)
+    Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
+    print(f'{(WarpTileM, WarpTileN, WarpTileK)}, {(CtaTileM, CtaTileN, CtaTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
+
+```
+
+| WarpShape     | InstructionShape | ThreadblockShape | Arithmetic intensity | Bytes_per_clc | clcs   |
+|---------------|------------------|------------------|----------------------|---------------|--------|
+| (16, 8, 16)   | (16, 8, 16)      | (16, 8, 16)      | 6.4                  | 1059.375      | 0.604  |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 12.800               | 317.812       | 77.329|
+| (32, 128, 32) | (16, 8, 16)      | 12.190               | 556.172       | 38.664 |
+| (16, 64, 32)  | (16, 8, 16)      | 9.846                | 688.594       | 9.666  |
+| (16, 128, 32) | (16, 8, 16)      | 10.240               | 662.109       | 19.332 |
+| (32, 32, 32)  | (16, 8, 16)      | 10.667               | 635.625       | 9.666  |
+| (64, 64, 64)  | (16, 8, 16)      | 12.800               | 529.688       | 77.329 |
+| (32, 32, 64)  | (16, 8, 16)      | 10.667               | 635.625       | 19.332 |
+| (64, 32, 32)  | (16, 8, 16)      | 11.636               | 582.656       | 19.332 |
 
 # 实现
 ## block matmul
