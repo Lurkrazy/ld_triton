@@ -315,7 +315,7 @@ $clcs = \frac{FLOPs\_per\_SM}{6780}$
 </p>
 
 <p>
-$Arithmetic\_intensity =$ 
+$Arithmetic\_intensity=$ 
 </p>
 
 <p>
