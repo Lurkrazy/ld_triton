@@ -300,7 +300,7 @@ mma.sync.aligned.m16n8k16.row.col.f32.bf16.bf16.f32
   {%Rc0, %Rc1, %Rc2, %Rc3};
 ```
 
-数据在Register File中
+数据在Register File中， 同一个WarpBlock在同一个SM中计算
 
 Shared Memory Bandwidth 是 128 bytes/clock per SM, 没有找到Register File Bandwidth. 一般情况下Register File Bandwidth 比 Shared Memory Bandwidth 高一个数量级
 
@@ -381,9 +381,8 @@ for (MmaM, MmaN, MmaK) in InstructionShape:
         FLOPs_per_SM = 2 * WarpTileM * WarpTileN * WarpTileK
         clcs = FLOPs_per_SM / 512
         Bytes_per_SM = WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * WarpTileM * WarpTileN
+        Bytes_per_clc = Bytes_per_SM / clcs
         Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / MmaK)
-        # Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
-        Bytes_per_clc = (WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * WarpTileK / MmaK * WarpTileM * WarpTileN) / clcs
         print(f'{(WarpTileM, WarpTileN, WarpTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
 
 ```
@@ -392,7 +391,7 @@ for (MmaM, MmaN, MmaK) in InstructionShape:
 |---------------|------------------|----------------------|---------------|--------|
 | (16, 8, 16)   | (16, 8, 16)      | 6.4                  | 80            | 8      |
 | (64, 64, 32)  | (16, 8, 16)      | 12.800               | 40            | 512    |
-| (32, 128, 32) | (16, 8, 16)      | 12.190               | 42.000        | 512    |
+| (32, 128, 32) | (16, 8, 16)      | 12.190               | 42            | 512    |
 | (16, 64, 32)  | (16, 8, 16)      | 9.846                | 52            | 128    |
 | (16, 128, 32) | (16, 8, 16)      | 10.240               | 50            | 256    |
 | (32, 32, 32)  | (16, 8, 16)      | 10.667               | 48            | 128    |
@@ -463,28 +462,28 @@ WarpShape_and_ThreadblockShape = [
 
 for ((WarpTileM, WarpTileN, WarpTileK), (CtaTileM, CtaTileN, CtaTileK)) in WarpShape_and_ThreadblockShape:
     FLOPs_per_SM = 2 * CtaTileM * CtaTileN * CtaTileK
-    clcs = FLOPs_per_SM / 6780
+    clcs = FLOPs_per_SM / 512
+    Bytes_per_SM = CtaTileM * WarpTileK + CtaTileK * CtaTileN + 2 * (CtaTileK / WarpTileK)  * CtaTileM * CtaTileN
+    Bytes_per_clc = Bytes_per_SM / clcs
     Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / CtaTileK)
-    Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
     print(f'{(WarpTileM, WarpTileN, WarpTileK)}, {(CtaTileM, CtaTileN, CtaTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
-
 ```
 
 | WarpShape     | InstructionShape | ThreadblockShape | Arithmetic intensity | Bytes_per_clc | clcs    |
 |---------------|------------------|------------------|----------------------|---------------|---------|
-| (16, 8, 16)   | (16, 8, 16)      | (16, 8, 16)      | 6.4                  | 1059.375      | 0.604   |
-| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 21.333               | 317.812       | 77.329  |
-| (64, 64, 32)  | (16, 8, 16)      | (64, 256, 32)    | 21.333               | 317.812       | 154.657 |
-| (64, 64, 32)  | (16, 8, 16)      | (128, 128, 32)   | 21.333               | 317.812       | 154.657 |
-| (64, 64, 32)  | (16, 8, 16)      | (128, 64, 32)    | 21.333               | 344.297       | 77.329  |
-
-| (32, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 19.692              | 556.172       | 77.329 |
-| (16, 64, 32)  | (16, 8, 16)      | 9.846                | 688.594       | 9.666  |
-| (16, 128, 32) | (16, 8, 16)      | 10.240               | 662.109       | 19.332 |
-| (32, 32, 32)  | (16, 8, 16)      | 10.667               | 635.625       | 9.666  |
-| (64, 64, 64)  | (16, 8, 16)      | 12.800               | 529.688       | 77.329 |
-| (32, 32, 64)  | (16, 8, 16)      | 10.667               | 635.625       | 19.332 |
-| (64, 32, 32)  | (16, 8, 16)      | 11.636               | 582.656       | 19.332 |
+| (16, 8, 16)   | (16, 8, 16)      | (16, 8, 16)      | 6.4                  | 80            | 8       |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 21.333               | 22            | 1024    |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 256, 32)    | 21.333               | 21            | 2048    |
+| (64, 64, 32)  | (16, 8, 16)      | (128, 128, 32)   | 21.333               | 20            | 2048    |
+| (64, 64, 32)  | (16, 8, 16)      | (128, 64, 32)    | 21.333               | 22            | 1024    |
+| (32, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 19.692               | 22            | 1024    |
+| (16, 64, 32)  | (16, 8, 16)      | (64, 64, 32)     | 14.222               | 24            | 512     |
+| (16, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 15.059               | 22            | 1024    |
+| (32, 32, 32)  | (16, 8, 16)      | (64, 64, 32)     | 16.000               | 24            | 512     |
+| (64, 64, 64)  | (16, 8, 16)      | (128, 128, 64)   | 32.000               | 12            | 4096    |
+| (32, 32, 64)  | (16, 8, 16)      | (64, 64, 64)     | 21.333               | 16            | 1024    |
+| (64, 32, 32)  | (16, 8, 16)      | (128, 64, 32)    | 18.286               | 22            | 1024    |
+| (32, 64, 32)  | (16, 8, 16)      | (64, 64, 32)     | 18.286               | 24            | 512     |
 
 # 实现
 ## block matmul
