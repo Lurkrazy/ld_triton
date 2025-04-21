@@ -239,15 +239,17 @@ GPU Boost Clock (MHz): 1695
 
 Peak FP32 TFLOPS (non-Tensor) = 2 * (GPU Boost Clock (MHz)) * (CUDA Cores / GPU) = 2 * 1695 * 1e6 * 10496 = 35.581440e12
 
-Peak FP32 TFLOPS / SM = 2 * (CUDA Cores / GPU) = 2 * 1695 FLOPS
+Peak FP32 TFLOPS / SM / clock = 2 * (CUDA Cores / SM) = 2 * 128 FLOPS = 256 FLOPS
 
-Peak FP16 Tensor TFLOPS with FP32 Accumulate / SM = 2 * 1695 * 2  = 6780 FLOPS
+Peak FP16 Tensor TFLOPS with FP32 Accumulate / SM  / clock = 2 * 128 * 2  = 512 FLOPS
 
-Peak FP16 Tensor TFLOPS with FP32 Accumulate / Tensor Cores = 1695 FLOPS
+Peak FP16 Tensor TFLOPS with FP32 Accumulate / Tensor Cores / clock = 128 FLOPS
 
 Shared Memory / SM: Shared Memory / SMs = 10752 KB / 82 = 131.122 KB
 
 Shared Memory Bandwidth: 128 bytes/clock per SM
+
+Shared Memory Bandwidth: (128 bytes/clock per SM) * (GPU Boost Clock (MHz)) * SMs = 128 * 1695 * 1e6 * 82 = 17.80e12
 
 ## basic triple loop nest
 ```
@@ -311,7 +313,7 @@ $FLOPs\_per\_SM = 2 * WarpTileM * WarpTileN * WarpTileK$
 </p>
 
 <p>
-$clcs = \frac{FLOPs\_per\_SM}{6780}$
+$clcs = \frac{FLOPs\_per\_SM}{512}$
 </p>
 
 <p>
@@ -319,7 +321,7 @@ $Bytes\_per\_SM = WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK 
 </p>
 
 <p>
-$= WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * WarpTileM * MmaN$
+$= WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * WarpTileM * WarpTileN$
 </p>
 
 <p>
@@ -327,11 +329,11 @@ $Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clcs}$
 </p>
 
 <p>
-$= \frac{Bytes\_per\_SM}{FLOPs\_per\_SM / 6780}$
+$= \frac{Bytes\_per\_SM}{FLOPs\_per\_SM / 512}$
 </p>
 
 <p>
-$= \frac{6780}{Arithmetic\_intensity}$
+$= \frac{512}{Arithmetic\_intensity}$
 </p>
 
 <p>
@@ -343,7 +345,7 @@ $=\frac{FLOPs\_per\_SM} {Bytes\_per\_SM}$
 </p>
 
 <p>
-$\frac{2 * WarpTileM * WarpTileN * WarpTileK}{WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK * WarpTileM * MmaN}$
+$\frac{2 * WarpTileM * WarpTileN * WarpTileK}{WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK * WarpTileM * WarpTileN}$
 </p>
 
 <p>
@@ -377,7 +379,8 @@ WarpShape = [
 for (MmaM, MmaN, MmaK) in InstructionShape:
     for (WarpTileM, WarpTileN, WarpTileK) in WarpShape:
         FLOPs_per_SM = 2 * WarpTileM * WarpTileN * WarpTileK
-        clcs = FLOPs_per_SM / 6780
+        clcs = FLOPs_per_SM / 512
+        Bytes_per_SM = WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * WarpTileM * WarpTileN
         Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / MmaK)
         # Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
         Bytes_per_clc = (WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * WarpTileK / MmaK * WarpTileM * WarpTileN) / clcs
@@ -387,15 +390,15 @@ for (MmaM, MmaN, MmaK) in InstructionShape:
 
 | WarpShape     | InstructionShape | Arithmetic intensity | Bytes_per_clc | clcs   |
 |---------------|------------------|----------------------|---------------|--------|
-| (16, 8, 16)   | (16, 8, 16)      | 6.4                  | 1059.375      | 0.604  |
-| (64, 64, 32)  | (16, 8, 16)      | 12.800               | 529.688       | 38.664 |
-| (32, 128, 32) | (16, 8, 16)      | 12.190               | 556.172       | 38.664 |
-| (16, 64, 32)  | (16, 8, 16)      | 9.846                | 688.594       | 9.666  |
-| (16, 128, 32) | (16, 8, 16)      | 10.240               | 662.109       | 19.332 |
-| (32, 32, 32)  | (16, 8, 16)      | 10.667               | 635.625       | 9.666  |
-| (64, 64, 64)  | (16, 8, 16)      | 12.800               | 529.688       | 77.329 |
-| (32, 32, 64)  | (16, 8, 16)      | 10.667               | 635.625       | 19.332 |
-| (64, 32, 32)  | (16, 8, 16)      | 11.636               | 582.656       | 19.332 |
+| (16, 8, 16)   | (16, 8, 16)      | 6.4                  | 80            | 8      |
+| (64, 64, 32)  | (16, 8, 16)      | 12.800               | 40            | 512    |
+| (32, 128, 32) | (16, 8, 16)      | 12.190               | 42.000        | 512    |
+| (16, 64, 32)  | (16, 8, 16)      | 9.846                | 52            | 128    |
+| (16, 128, 32) | (16, 8, 16)      | 10.240               | 50            | 256    |
+| (32, 32, 32)  | (16, 8, 16)      | 10.667               | 48            | 128    |
+| (64, 64, 64)  | (16, 8, 16)      | 12.800               | 40            | 1024   |
+| (32, 32, 64)  | (16, 8, 16)      | 10.667               | 48            | 256    |
+| (64, 32, 32)  | (16, 8, 16)      | 11.636               | 44            | 256    |
 
 ## Warp-level GEMM (warp-level parallelism)
 ```
@@ -467,11 +470,15 @@ for ((WarpTileM, WarpTileN, WarpTileK), (CtaTileM, CtaTileN, CtaTileK)) in WarpS
 
 ```
 
-| WarpShape     | InstructionShape | ThreadblockShape | Arithmetic intensity | Bytes_per_clc | clcs   |
-|---------------|------------------|------------------|----------------------|---------------|--------|
-| (16, 8, 16)   | (16, 8, 16)      | (16, 8, 16)      | 6.4                  | 1059.375      | 0.604  |
-| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 12.800               | 317.812       | 77.329|
-| (32, 128, 32) | (16, 8, 16)      | 12.190               | 556.172       | 38.664 |
+| WarpShape     | InstructionShape | ThreadblockShape | Arithmetic intensity | Bytes_per_clc | clcs    |
+|---------------|------------------|------------------|----------------------|---------------|---------|
+| (16, 8, 16)   | (16, 8, 16)      | (16, 8, 16)      | 6.4                  | 1059.375      | 0.604   |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 21.333               | 317.812       | 77.329  |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 256, 32)    | 21.333               | 317.812       | 154.657 |
+| (64, 64, 32)  | (16, 8, 16)      | (128, 128, 32)   | 21.333               | 317.812       | 154.657 |
+| (64, 64, 32)  | (16, 8, 16)      | (128, 64, 32)    | 21.333               | 344.297       | 77.329  |
+
+| (32, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 19.692              | 556.172       | 77.329 |
 | (16, 64, 32)  | (16, 8, 16)      | 9.846                | 688.594       | 9.666  |
 | (16, 128, 32) | (16, 8, 16)      | 10.240               | 662.109       | 19.332 |
 | (32, 32, 32)  | (16, 8, 16)      | 10.667               | 635.625       | 9.666  |
