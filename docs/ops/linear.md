@@ -210,8 +210,7 @@ $\frac{\partial f(weight^T)}{\partial weight^T} = A^T @ \frac{\partial f(linear)
 
 $\frac{\partial f(weight)}{\partial weight} = (\frac{\partial f(linear)}{\partial C}) ^ T @ A$ 
 
-# MFU
-# Arithmetic_intensity
+# Arithmetic intensity
 ## Hardware
 RTX 3090 
 
@@ -305,7 +304,7 @@ Shared Memory Bandwidth 是 128 bytes/clock per SM, 没有找到Register File Ba
 
 $InstructionShape=(MmaM， MmaN, MmaK)=(16, 8, 16)$
 
-$WarpShape=(WarpTileM, WarpTileN, WarpTileK)=(num_MmaM * MmaM, num_MmaN, num_MmaK)$
+$WarpShape=(WarpTileM, WarpTileN, WarpTileK)=(num\_MmaM * MmaM, num\_MmaN, num\_MmaK)$
 
 <p>
 $FLOPs\_per\_SM = 2 * WarpTileM * WarpTileN * WarpTileK$
@@ -316,23 +315,23 @@ $clcs = \frac{FLOPs\_per\_SM}{6780}$
 </p>
 
 <p>
-$Arithmetic\_intensity = $ 
+$Arithmetic\_intensity =$ 
 </p>
 
 <p>
-$\frac{FLOPs\_per\_SM} {2 * (WarpTileM * WarpTileK + WarpTileK * WarpTileN + (num\_MmaK) * WarpTileM * WarpTileN)}$
+$\frac{FLOPs\_per\_SM} {WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK * WarpTileM * WarpTileN}$
 </p>
 
 <p>
-$\frac{WarpTileM * WarpTileN * WarpTileK}{WarpTileM * WarpTileK + WarpTileK * WarpTileN + num\_MmaK * WarpTileM * MmaN}$
+$\frac{2 * WarpTileM * WarpTileN * WarpTileK}{WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * num\_MmaK * WarpTileM * MmaN}$
 </p>
 
 <p>
-$=\frac{1}{1 / WarpTileM + 1 / WarpTileN + num\_MmaK / WarpTileK}$
+$=\frac{1}{1 / 2WarpTileM + 1 / 2WarpTileN + num\_MmaK / WarpTileK}$
 </p>
 
 <p>
-$=\frac{1}{1 / WarpTileM + 1 / WarpTileN + 1 / MmaK}$
+$=\frac{1}{1 / 2WarpTileM + 1 / 2WarpTileN + 1 / MmaK}$
 </p>
 
 <p>
@@ -361,23 +360,23 @@ for (MmaM, MmaN, MmaK) in InstructionShape:
     for (WarpTileM, WarpTileN, WarpTileK) in WarpShape:
         FLOPs_per_SM = 2 * WarpTileM * WarpTileN * WarpTileK
         clcs = FLOPs_per_SM / 6780
-        Arithmetic_intensity = 1 / (1 / WarpTileM + 1 / WarpTileN + 1 / MmaK)
+        Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / MmaK)
         Bytes_per_clc = FLOPs_per_SM / Arithmetic_intensity /clcs
-        print(f'{(WarpTileM, WarpTileN, WarpTileK)}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
+        print(f'{(WarpTileM, WarpTileN, WarpTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
 
 ```
 
-| WarpShape     | InstructionShape | Arithmetic intensity | Bytes_per_clc |
-|---------------|------------------|----------------------|---------------|
-| (16, 8, 16)   | (16, 8, 16)      | 4.0                  | 1695          |
-| (64, 64, 32)  | (16, 8, 16)      | 10.667               | 635.625       |
-| (32, 128, 32) | (16, 8, 16)      | 9.846                | 688.594       |
-| (16, 64, 32)  | (16, 8, 16)      | 7.111                | 953.438       |
-| (16, 128, 32) | (16, 8, 16)      | 7.529                | 900.469       |
-| (32, 32, 32)  | (16, 8, 16)      | 8.000                | 847.500       |
-| (64, 64, 64)  | (16, 8, 16)      | 10.667               | 635.625       |
-| (32, 32, 64)  | (16, 8, 16)      | 8.000                | 847.500       |
-| (64, 32, 32)  | (16, 8, 16)      | 9.143                | 741.562       |
+| WarpShape     | InstructionShape | Arithmetic intensity | Bytes_per_clc | clcs   |
+|---------------|------------------|----------------------|---------------|--------|
+| (16, 8, 16)   | (16, 8, 16)      | 6.4                  | 1059.375      | 0.604  |
+| (64, 64, 32)  | (16, 8, 16)      | 12.800               | 529.688       | 38.664 |
+| (32, 128, 32) | (16, 8, 16)      | 12.190               | 556.172       | 38.664 |
+| (16, 64, 32)  | (16, 8, 16)      | 9.846                | 688.594       | 9.666  |
+| (16, 128, 32) | (16, 8, 16)      | 10.240               | 662.109       | 19.332 |
+| (32, 32, 32)  | (16, 8, 16)      | 10.667               | 635.625       | 9.666  |
+| (64, 64, 64)  | (16, 8, 16)      | 12.800               | 529.688       | 77.329 |
+| (32, 32, 64)  | (16, 8, 16)      | 10.667               | 635.625       | 19.332 |
+| (64, 32, 32)  | (16, 8, 16)      | 11.636               | 582.656       | 19.332 |
 
 
 
