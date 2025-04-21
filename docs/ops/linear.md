@@ -420,6 +420,26 @@ $clcs = \frac{FLOPs\_per\_SM}{6780}$
 </p>
 
 <p>
+$Bytes\_per\_SM = CtaTileM * CtaTileK + CtaTileK * CtaTileN + 2 * num\_WarpTileK * CtaTileM * CtaTileN$
+</p>
+
+<p>
+$= CtaTileM * CtaTileK + CtaTileK * CtaTileN + 2 * (CtaTileK / WarpTileK) * CtaTileM * CtaTileN$
+</p>
+
+<p>
+$Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clcs}$
+</p>
+
+<p>
+$= \frac{Bytes\_per\_SM}{FLOPs\_per\_SM / 512}$
+</p>
+
+<p>
+$= \frac{512}{FLOPs\_per\_SM / Arithmetic\_intensity}$
+</p>
+
+<p>
 $Arithmetic\_intensity=$ 
 </p>
 
