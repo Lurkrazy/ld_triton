@@ -239,6 +239,8 @@ GPU Boost Clock (MHz): 1695
 
 Peak FP32 TFLOPS (non-Tensor) = 2 * (GPU Boost Clock (MHz)) * (CUDA Cores / GPU) = 2 * 1695 * 1e6 * 10496 = 35.581440e12
 
+Peak FP16 Tensor TFLOPS with FP32 Accumulate = 2 * Peak FP32 TFLOPS (non-Tensor)  = 71.16288e12
+
 Peak FP32 TFLOPS / SM / clock = 2 * (CUDA Cores / SM) = 2 * 128 FLOPS = 256 FLOPS
 
 Peak FP16 Tensor TFLOPS with FP32 Accumulate / SM  / clock = 2 * 128 * 2  = 512 FLOPS
@@ -250,6 +252,12 @@ Shared Memory / SM: Shared Memory / SMs = 10752 KB / 82 = 131.122 KB
 Shared Memory Bandwidth: 128 bytes/clock per SM
 
 Shared Memory Bandwidth: (128 bytes/clock per SM) * (GPU Boost Clock (MHz)) * SMs = 128 * 1695 * 1e6 * 82 = 17.80e12
+
+Memory Interface: 348 bit
+
+Memory Clock (Data Rate): 19.5 Gbps
+
+Memory Bandwidth (GB/sec): 936 GB/sec
 
 ## basic triple loop nest
 ```
@@ -313,7 +321,7 @@ $FLOPs\_per\_SM = 2 * WarpTileM * WarpTileN * WarpTileK$
 </p>
 
 <p>
-$clcs = \frac{FLOPs\_per\_SM}{512}$
+$clks = \frac{FLOPs\_per\_SM}{512}$
 </p>
 
 <p>
@@ -325,7 +333,7 @@ $= WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * War
 </p>
 
 <p>
-$Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clcs}$
+$Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clks}$
 </p>
 
 <p>
@@ -379,15 +387,15 @@ WarpShape = [
 for (MmaM, MmaN, MmaK) in InstructionShape:
     for (WarpTileM, WarpTileN, WarpTileK) in WarpShape:
         FLOPs_per_SM = 2 * WarpTileM * WarpTileN * WarpTileK
-        clcs = FLOPs_per_SM / 512
+        clks = FLOPs_per_SM / 512
         Bytes_per_SM = WarpTileM * WarpTileK + WarpTileK * WarpTileN + 2 * (WarpTileK / MmaK)  * WarpTileM * WarpTileN
-        Bytes_per_clc = Bytes_per_SM / clcs
+        Bytes_per_clc = Bytes_per_SM / clks
         Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / MmaK)
-        print(f'{(WarpTileM, WarpTileN, WarpTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
+        print(f'{(WarpTileM, WarpTileN, WarpTileK)}, clks: {clks:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
 
 ```
 
-| WarpShape     | InstructionShape | Arithmetic intensity | Bytes_per_clc | clcs   |
+| WarpShape     | InstructionShape | Arithmetic intensity | Bytes_per_clc | clks   |
 |---------------|------------------|----------------------|---------------|--------|
 | (16, 8, 16)   | (16, 8, 16)      | 6.4                  | 80            | 8      |
 | (64, 64, 32)  | (16, 8, 16)      | 12.800               | 40            | 512    |
@@ -412,7 +420,7 @@ $WarpShape=(WarpTileM, WarpTileN, WarpTileK)=(num\_MmaM * MmaM, num\_MmaN, num\_
 </p>
 
 <p>
-$ThreadblockShape=(CtaTileM, CtaTileN, CtaTileK)=(num\_WarpTileM, num\_WarpTileN, num\_WarpTileK)$
+$ThreadblockShape=(CtaTileM, CtaTileN, CtaTileK)=(num\_WarpTileM * WarpTileM, num\_WarpTileN * WarpTileN, num\_WarpTileK * WarpTileK)$
 </p>
 
 <p>
@@ -420,19 +428,19 @@ $FLOPs\_per\_SM = 2 * CtaTileM * CtaTileN * CtaTileK$
 </p>
 
 <p>
-$clcs = \frac{FLOPs\_per\_SM}{6780}$
+$clks = \frac{FLOPs\_per\_SM}{512}$
 </p>
 
 <p>
-$Bytes\_per\_SM = CtaTileM * CtaTileK + CtaTileK * CtaTileN + 2 * num\_WarpTileK * CtaTileM * CtaTileN$
+$Bytes\_per\_SM = num\_WarpTileN * CtaTileM * CtaTileK + num\_WarpTileM * CtaTileK * CtaTileN + 2 * CtaTileM * CtaTileN$
 </p>
 
 <p>
-$= CtaTileM * CtaTileK + CtaTileK * CtaTileN + 2 * (CtaTileK / WarpTileK) * CtaTileM * CtaTileN$
+$= (CtaTileN / WarpTileN) * CtaTileM * CtaTileK + (CtaTileM / WarpTileM) * CtaTileK * CtaTileN + 2 * CtaTileM * CtaTileN$
 </p>
 
 <p>
-$Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clcs}$
+$Bytes\_per\_SM\_per\_clc = \frac{Bytes\_per\_SM}{clks}$
 </p>
 
 <p>
@@ -440,7 +448,7 @@ $= \frac{Bytes\_per\_SM}{FLOPs\_per\_SM / 512}$
 </p>
 
 <p>
-$= \frac{512}{FLOPs\_per\_SM / Arithmetic\_intensity}$
+$= \frac{512}{Arithmetic\_intensity}$
 </p>
 
 <p>
@@ -448,7 +456,7 @@ $Arithmetic\_intensity=$
 </p>
 
 <p>
-$\frac{FLOPs\_per\_SM} {num\_WarpTileN * CtaTileM * CtaTileK + num\_WarpTileM * CtaTileK * CtaTileN + 2 * CtaTileM * CtaTileN}$
+$\frac{FLOPs\_per\_SM} {Bytes\_per\_SM}$
 </p>
 
 <p>
@@ -457,10 +465,6 @@ $\frac{2 * CtaTileM * CtaTileN * CtaTileK}{(CtaTileN / WarpTileN) * CtaTileM * C
 
 <p>
 $=\frac{1}{1 / 2WarpTileN + 1 / 2WarpTileM + 1 / CtaTileK}$
-</p>
-
-<p>
-$Bytes\_per\_clc = \frac{FLOPs\_per\_SM}{Arithmetic\_intensity}/clcs$
 </p>
 
 ```
@@ -486,28 +490,249 @@ WarpShape_and_ThreadblockShape = [
 
 for ((WarpTileM, WarpTileN, WarpTileK), (CtaTileM, CtaTileN, CtaTileK)) in WarpShape_and_ThreadblockShape:
     FLOPs_per_SM = 2 * CtaTileM * CtaTileN * CtaTileK
-    clcs = FLOPs_per_SM / 512
-    Bytes_per_SM = CtaTileM * WarpTileK + CtaTileK * CtaTileN + 2 * (CtaTileK / WarpTileK)  * CtaTileM * CtaTileN
-    Bytes_per_clc = Bytes_per_SM / clcs
+    clks = FLOPs_per_SM / 512
+    Bytes_per_SM = (CtaTileN / WarpTileN) * CtaTileM * WarpTileK + (CtaTileM / WarpTileM) * CtaTileK * CtaTileN + 2 * CtaTileM * CtaTileN
+    Bytes_per_clc = Bytes_per_SM / clks
     Arithmetic_intensity = 1 / (1 / (2 * WarpTileM) + 1 / (2 * WarpTileN) + 1 / CtaTileK)
-    print(f'{(WarpTileM, WarpTileN, WarpTileK)}, {(CtaTileM, CtaTileN, CtaTileK)}, clcs: {clcs:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
+    print(f'{(WarpTileM, WarpTileN, WarpTileK)}, {(CtaTileM, CtaTileN, CtaTileK)}, clks: {clks:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, Bytes_per_clc: {Bytes_per_clc:.3f}')
 ```
 
-| WarpShape     | InstructionShape | ThreadblockShape | Arithmetic intensity | Bytes_per_clc | clcs    |
+| WarpShape     | InstructionShape | ThreadblockShape | Arithmetic intensity | Bytes_per_clc | clks    |
 |---------------|------------------|------------------|----------------------|---------------|---------|
 | (16, 8, 16)   | (16, 8, 16)      | (16, 8, 16)      | 6.4                  | 80            | 8       |
-| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 21.333               | 22            | 1024    |
-| (64, 64, 32)  | (16, 8, 16)      | (64, 256, 32)    | 21.333               | 21            | 2048    |
-| (64, 64, 32)  | (16, 8, 16)      | (128, 128, 32)   | 21.333               | 20            | 2048    |
-| (64, 64, 32)  | (16, 8, 16)      | (128, 64, 32)    | 21.333               | 22            | 1024    |
-| (32, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 19.692               | 22            | 1024    |
-| (16, 64, 32)  | (16, 8, 16)      | (64, 64, 32)     | 14.222               | 24            | 512     |
-| (16, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 15.059               | 22            | 1024    |
-| (32, 32, 32)  | (16, 8, 16)      | (64, 64, 32)     | 16.000               | 24            | 512     |
-| (64, 64, 64)  | (16, 8, 16)      | (128, 128, 64)   | 32.000               | 12            | 4096    |
-| (32, 32, 64)  | (16, 8, 16)      | (64, 64, 64)     | 21.333               | 16            | 1024    |
-| (64, 32, 32)  | (16, 8, 16)      | (128, 64, 32)    | 18.286               | 22            | 1024    |
-| (32, 64, 32)  | (16, 8, 16)      | (64, 64, 32)     | 18.286               | 24            | 512     |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 128, 32)    | 21.333               | 24            | 1024    |
+| (64, 64, 32)  | (16, 8, 16)      | (64, 256, 32)    | 21.333               | 24            | 2048    |
+| (64, 64, 32)  | (16, 8, 16)      | (128, 128, 32)   | 21.333               | 24            | 2048    |
+| (64, 64, 32)  | (16, 8, 16)      | (128, 64, 32)    | 21.333               | 24            | 1024    |
+| (32, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 19.692               | 26            | 1024    |
+| (16, 64, 32)  | (16, 8, 16)      | (64, 64, 32)     | 14.222               | 36            | 512     |
+| (16, 128, 32) | (16, 8, 16)      | (64, 128, 32)    | 15.059               | 34            | 1024    |
+| (32, 32, 32)  | (16, 8, 16)      | (64, 64, 32)     | 16.000               | 32            | 512     |
+| (64, 64, 64)  | (16, 8, 16)      | (128, 128, 64)   | 32.000               | 16            | 4096    |
+| (32, 32, 64)  | (16, 8, 16)      | (64, 64, 64)     | 21.333               | 24            | 1024    |
+| (64, 32, 32)  | (16, 8, 16)      | (128, 64, 32)    | 18.286               | 28            | 1024    |
+| (32, 64, 32)  | (16, 8, 16)      | (64, 64, 32)     | 18.286               | 28            | 512     |
+
+## Threadblock-level GEMM (threadblock-level)
+```
+cp.async.cg.shared.global [%1], [%2], %3
+
+cp.async.cg.shared.global.L2::cache_hint [%0], [%1], %2
+```
+数据在 Global Memory 或者 L2 cache 中, Global Memory Bandwidth 是 936 GB/sec
+
+RTX 3090 L2 cache Bandwidth 的查不到. 
+
+[A100 L2 cache Bandwidth](https://forums.developer.nvidia.com/t/how-to-reach-peak-bandwidth-of-l2-cache-on-a100/198560)
+
+A100 L2 cache Bandwidth: 5120 Bytes/clk = 5120 * 1414 * 1e6 = 7239.68 * 1e9 Bytes / second = 6742.477 GB / second
+
+A100 L2 cache Bandwidth: 4830 GB/s
+
+以下分析假设 RTX 3090 L2 cache Bandwidth 和 A100 L2 cache Bandwidth 一样
+
+Global Memory Bandwidth = 936 GB/sec
+
+ThreadblockShape=(CtaTileM, CtaTileN, CtaTileK)
+
+qwen2.5 72B
+ProblemShape=(2048, 8192, 29696)
+
+<p>
+$ThreadblockShape=(CtaTileM, CtaTileN, CtaTileK)$
+</p>
+
+<p>
+$ProblemShape=(GemmM, GemmN, GemmK)=(num\_CtaTileM * CtaTileM, num\_CtaTileN * CtaTileN, num\_CtaTileK * CtaTileK)$
+</p>
+
+<p>
+$FLOPs = (2 * GemmM * GemmN * GemmK)$
+</p>
+
+<p>
+$seconds = \frac{FLOPs}{71.16288e12}$
+</p>
+
+<p>
+$Bytes = (num\_CtaTileN * GemmM * GemmK + num\_CtaTileM * GemmK * GemmN + 2 * GemmM * GemmN)$
+</p>
+
+<p>
+$= (GemmN / CtaTileN) * GemmM * GemmK + (GemmM / CtaTileM) * GemmK * GemmN + 2 * CtaTileM * CtaTileN$
+</p>
+
+<p>
+$Bytes\_per\_second = \frac{Bytes}{seconds}$
+</p>
+
+<p>
+$= \frac{Bytes\_second}{FLOPs\_per\_second / 71.16288e12}$
+</p>
+
+<p>
+$= \frac{Bytes}{FLOPs / 71.16288e12}$
+</p>
+
+<p>
+$= \frac{71.16288e12}{Arithmetic\_intensity}$
+</p>
+
+<p>
+$Arithmetic\_intensity=$ 
+</p>
+
+<p>
+$\frac{FLOPs\_per\_SM} {Bytes\_per\_SM}$
+</p>
+
+<p>
+$\frac{FLOPs} {Bytes}$
+</p>
+
+<p>
+$\frac{2 * GemmM * GemmN * GemmK}{(GemmN / CtaTileN) * GemmM * GemmK + (GemmM / CtaTileM) * GemmK * GemmN + 2 * CtaTileM * CtaTileN}$
+</p>
+
+<p>
+$=\frac{1}{1 / 2CtaTileN + 1 / 2CtaTileM + 1 / GemmK}$
+</p>
+
+$Global\_Memory\_Bandwidth * (1 - (L2\_cache\_hit)) + (L2\_cache\_Bandwidth) * (L2\_cache\_hit) = GB\_per\_second$
+
+$(L2\_cache\_Bandwidth - Global\_Memory\_Bandwidth) * L2\_cache\_hit = GB\_per\_second - Global\_Memory\_Bandwidth$
+
+$L2\_cache\_hit = \frac{GB\_per\_second - Global\_Memory\_Bandwidth}{L2\_cache\_Bandwidth - Global\_Memory\_Bandwidth}$
+
+```
+ThreadblockShape_and_ProblemShape = [
+    ((16, 8, 16), (1, 8192, 29696)),
+    ((16, 64, 32), (1, 8192, 29696)),
+    ((16, 64, 64), (1, 8192, 29696)),
+    ((16, 128, 32), (1, 8192, 29696)),
+    ((16, 128, 64), (1, 8192, 29696)),
+    ((16, 256, 32), (1, 8192, 29696)),
+
+    ((16, 8, 16), (2, 8192, 29696)),
+    ((16, 64, 32), (2, 8192, 29696)),
+    ((16, 64, 64), (2, 8192, 29696)),
+    ((16, 128, 32), (2, 8192, 29696)),
+    ((16, 128, 64), (2, 8192, 29696)),
+    ((16, 256, 32), (2, 8192, 29696)),
+
+    ((16, 8, 16), (3, 8192, 29696)),
+    ((16, 64, 32), (3, 8192, 29696)),
+    ((16, 64, 64), (3, 8192, 29696)),
+    ((16, 128, 32), (3, 8192, 29696)),
+    ((16, 128, 64), (3, 8192, 29696)),
+    ((16, 256, 32), (3, 8192, 29696)),
+
+    ((16, 8, 16), (4, 8192, 29696)),
+    ((16, 64, 32), (4, 8192, 29696)),
+    ((16, 64, 64), (4, 8192, 29696)),
+    ((16, 128, 32), (4, 8192, 29696)),
+    ((16, 128, 64), (4, 8192, 29696)),
+    ((16, 256, 32), (4, 8192, 29696)),
+
+    ((16, 8, 16), (8, 8192, 29696)),
+    ((16, 64, 32), (8, 8192, 29696)),
+    ((16, 64, 64), (8, 8192, 29696)),
+    ((16, 128, 32), (8, 8192, 29696)),
+    ((16, 128, 64), (8, 8192, 29696)),
+    ((16, 256, 32), (8, 8192, 29696)),
+
+    ((16, 8, 16), (16, 8192, 29696)),
+    ((16, 64, 32), (16, 8192, 29696)),
+    ((16, 64, 64), (16, 8192, 29696)),
+    ((16, 128, 32), (16, 8192, 29696)),
+    ((16, 128, 64), (16, 8192, 29696)),
+    ((16, 256, 32), (16, 8192, 29696)),
+
+    ((16, 8, 16), (2048, 8192, 29696)),
+    ((64, 64, 32), (2048, 8192, 29696)),
+    ((64, 64, 64), (2048, 8192, 29696)),
+    ((64, 128, 32), (2048, 8192, 29696)),
+    ((64, 256, 32), (2048, 8192, 29696)),
+    ((128, 64, 32), (2048, 8192, 29696)),
+    ((128, 128, 32), (2048, 8192, 29696)),
+    ((128, 128, 64), (2048, 8192, 29696)),
+]
+
+SMs = 82
+
+for ((CtaTileM, CtaTileN, CtaTileK), (GemmM, GemmN, GemmK)) in ThreadblockShape_and_ProblemShape:
+    FLOPs = 2 * GemmM * GemmN * GemmK 
+    FLOPS = 71.16288e9 if GemmM > 16 else 71.16288e9 * (GemmM / 16)
+    print(f'FLOPS: {FLOPS}')
+    ms = FLOPs / FLOPS
+    Bytes = ((GemmN / CtaTileN) * GemmM * GemmK + ((GemmM + CtaTileM - 1) // CtaTileM) * GemmK * GemmN + 2 * GemmM * GemmN)
+    GB_per_second = (Bytes / ms * 1e3) / 1024 / 1024 / 1024
+    if GemmM < CtaTileM:
+        Arithmetic_intensity = 1 / (1 / (2 * CtaTileN) + ((GemmM + CtaTileM - 1) // CtaTileM) / (2 * GemmM) + 1 / GemmK)
+    else:
+        Arithmetic_intensity = 1 / (1 / (2 * CtaTileN) + 1 / (2 * CtaTileM) + 1 / GemmK)
+    L2_cache_Bandwidth = 4830
+    Global_Memory_Bandwidth = 936
+    L2_cache_hit = 100 * (GB_per_second - Global_Memory_Bandwidth) /(L2_cache_Bandwidth - Global_Memory_Bandwidth)
+    if L2_cache_hit < 0:
+        L2_cache_hit = 0.0
+        MFU = (FLOPs / ms) / 71.16288e9 
+    elif L2_cache_hit > 100.0:
+        L2_cache_hit = 100.0
+        MFU = FLOPs * (Global_Memory_Bandwidth / GB_per_second) / ms / 71.16288e9 
+    else:
+        MFU = (FLOPs / ms) / 71.16288e9 
+    MFU *= 100
+    print(f'{(CtaTileM, CtaTileN, CtaTileK)}, {(GemmM, GemmN, GemmK)}, ms: {ms:.3f}, Arithmetic_intensity: {Arithmetic_intensity:.3f}, GB_per_second: {GB_per_second:.3f}, L2_cache_hit: {L2_cache_hit:.3f}, MFU: {MFU}')
+```
+
+| ThreadblockShape | GemmShape           | Arithmetic intensity | GB_per_second | ms      | L2 cache hit(%) |  MFU(%) |
+|------------------|---------------------|----------------------|---------------|---------|--------------|---------|
+| (16, 8, 16)      | (1, 8192, 29696)    | 1.778                | 2330.141      | 0.109   | 35.802       | 6.25    |
+| (16, 64, 32)     | (1, 8192, 29696)    | 1.969                | 2103.613      | 0.109   | 29.985       | 6.25    |
+| (16, 64, 64)     | (1, 8192, 29696)    | 1.969                | 2103.613      | 0.109   | 29.985       | 6.25    |
+| (16, 128, 32)    | (1, 8192, 29696)    | 1.984                | 2087.432      | 0.109   | 29.569       | 6.25    |
+| (16, 128, 64)    | (1, 8192, 29696)    | 1.984                | 2087.432      | 0.109   | 29.569       | 6.25    |
+| (16, 256, 32)    | (1, 8192, 29696)    | 1.992                | 2097.342      | 0.109   | 29.362       | 6.25    |
+| (16, 8, 16)      | (2, 8192, 29696)    | 3.200                | 2589.169      | 0.109   | 42.454       | 12.25   |
+| (16, 64, 32)     | (2, 8192, 29696)    | 3.878                | 2136.114      | 0.109   | 30.820       | 12.25   |
+| (16, 64, 64)     | (2, 8192, 29696)    | 3.878                | 2136.114      | 0.109   | 30.820       | 12.25   |
+| (16, 128, 32)    | (2, 8192, 29696)    | 3.938                | 2103.753      | 0.109   | 29.989       | 12.25   |
+| (16, 128, 64)    | (2, 8192, 29696)    | 3.938                | 2103.753      | 0.109   | 29.989       | 12.25   |
+| (16, 256, 32)    | (2, 8192, 29696)    | 3.968                | 2087.572      | 0.109   | 29.573       | 12.25   |
+| (16, 8, 16)      | (3, 8192, 29696)    | 4.363                | 2848.198      | 0.109   | 49.106       | 18.75   |
+| (16, 64, 32)     | (3, 8192, 29696)    | 5.730                | 2168.614      | 0.109   | 31.654       | 18.75   |
+| (16, 64, 64)     | (3, 8192, 29696)    | 5.730                | 2168.614      | 0.109   | 31.654       | 18.75   |
+| (16, 128, 32)    | (3, 8192, 29696)    | 5.861                | 2120.073      | 0.109   | 30.408       | 18.75   |
+| (16, 128, 64)    | (3, 8192, 29696)    | 5.861                | 2120.073      | 0.109   | 30.408       | 18.75   |
+| (16, 256, 32)    | (3, 8192, 29696)    | 5.929                | 2095.802      | 0.109   | 29.784       | 18.75   |
+| (16, 8, 16)      | (4, 8192, 29696)    | 5.332                | 3107.227      | 0.109   | 55.758       | 25.0    |
+| (16, 64, 32)     | (4, 8192, 29696)    | 7.528                | 2201.115      | 0.109   | 32.489       | 25.0    |
+| (16, 64, 64)     | (4, 8192, 29696)    | 7.528                | 2201.115      | 0.109   | 32.489       | 25.0    |
+| (16, 128, 32)    | (4, 8192, 29696)    | 7.756                | 2136.393      | 0.109   | 30.827       | 25.0    |
+| (16, 128, 64)    | (4, 8192, 29696)    | 7.756                | 2136.393      | 0.109   | 30.827       | 25.0    |
+| (16, 256, 32)    | (4, 8192, 29696)    | 7.875                | 2104.031      | 0.109   | 29.996       | 25.0    |
+| (16, 8, 16)      | (8, 8192, 29696)    | 7.998                | 4143.341      | 0.109   | 82.366       | 50.0    |
+| (16, 64, 32)     | (8, 8192, 29696)    | 14.215               | 2331.117      | 0.109   | 35.827       | 50.0    |
+| (16, 64, 64)     | (8, 8192, 29696)    | 14.215               | 2331.117      | 0.109   | 35.827       | 50.0    |
+| (16, 128, 32)    | (8, 8192, 29696)    | 15.051               | 2201.673      | 0.109   | 32.503       | 50.0    |
+| (16, 128, 64)    | (8, 8192, 29696)    | 15.051               | 2201.673      | 0.109   | 32.503       | 50.0    |
+| (16, 256, 32)    | (8, 8192, 29696)    | 15.507               | 2136.951      | 0.109   | 30.841       | 50.0    |
+| (16, 8, 16)      | (16, 8192, 29696)   | 7.998                | 4143.341      | 0.109   | 100.00       | 15.059 |
+| (16, 64, 32)     | (16, 8192, 29696)   | 14.215               | 2331.117      | 0.109   | 42.504       | 100.0  |
+| (16, 64, 64)     | (16, 8192, 29696)   | 14.215               | 2331.117      | 0.109   | 42.504       | 100.0  |
+| (16, 128, 32)    | (16, 8192, 29696)   | 15.051               | 2201.673      | 0.109   | 35.856       | 100.0  |
+| (16, 128, 64)    | (16, 8192, 29696)   | 15.051               | 2201.673      | 0.109   | 35.856       | 100.0  |
+| (16, 256, 32)    | (16, 8192, 29696)   | 15.507               | 2136.951      | 0.109   | 32.532       | 100.0  |
+| (16, 8, 16)      | (2048, 8192, 29696) | 10.663               | 6215.569      | 14.002  | 100.000      | 15.059 |
+| (64, 64, 32)     | (2048, 8192, 29696) | 63.862               | 1037.788      | 14.002  | 2.614        | 100.0  |
+| (64, 64, 64)     | (2048, 8192, 29696) | 63.862               | 1037.788      | 14.002  | 2.614        | 100.0  |
+| (64, 128, 32)    | (2048, 8192, 29696) | 85.089               | 778.899       | 14.002  | 0            | 100.0  |
+| (64, 256, 32)    | (2048, 8192, 29696) | 102.048              | 649.454       | 14.002  | 0            | 100.0  |
+| (128, 64, 32)    | (2048, 8192, 29696) | 85.089               | 778.899       | 14.002  | 0            | 100.0  |
+| (128, 128, 32)   | (2048, 8192, 29696) | 127.451              | 520.010       | 14.002  | 0            | 100.0  |
+| (128, 128, 64)   | (2048, 8192, 29696) | 127.451              | 520.010       | 14.002  | 0            | 100.0  |
+
 
 # 实现
 ## block matmul
