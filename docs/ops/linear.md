@@ -598,11 +598,17 @@ $\frac{2 * GemmM * GemmN * GemmK}{(GemmN / CtaTileN) * GemmM * GemmK + (GemmM / 
 $=\frac{1}{1 / 2CtaTileN + 1 / 2CtaTileM + 1 / GemmK}$
 </p>
 
+<p>
 $Global\_Memory\_Bandwidth * (1 - (L2\_cache\_hit)) + (L2\_cache\_Bandwidth) * (L2\_cache\_hit) = GB\_per\_second$
+</p>
 
+<p>
 $(L2\_cache\_Bandwidth - Global\_Memory\_Bandwidth) * L2\_cache\_hit = GB\_per\_second - Global\_Memory\_Bandwidth$
+</p>
 
+<p>
 $L2\_cache\_hit = \frac{GB\_per\_second - Global\_Memory\_Bandwidth}{L2\_cache\_Bandwidth - Global\_Memory\_Bandwidth}$
+</p>
 
 ```
 ThreadblockShape_and_ProblemShape = [
