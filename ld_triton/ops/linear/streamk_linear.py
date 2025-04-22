@@ -2,7 +2,7 @@
 import torch
 import triton
 import triton.language as tl
-import triton.profiler as proton
+import triton.profiler as import triton.profiler as proton
 
 autotune_config = [
     triton.Config({'BLOCK_SIZE_M': 16, 'BLOCK_SIZE_N': 16, 'BLOCK_SIZE_K': 16, 'GROUP_SIZE_M': 8}, num_stages=3,
@@ -266,7 +266,7 @@ class _streamk_linear(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         input, weight, bias = ctx.saved_tensors
-        
+
         input_shape = input.shape
         grad_output_shape = grad_output.shape
         input = input.view(-1, input_shape[-1])

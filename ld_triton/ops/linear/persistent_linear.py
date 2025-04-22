@@ -41,11 +41,30 @@ autotune_config = [
 ]
 
 
+def _matmul_launch_metadata(grid, kernel, args):
+    ret = {}
+    M, N, K = args["M"], args["N"], args["K"]
+    BLOCK_SIZE_M = args["BLOCK_SIZE_M"]
+    BLOCK_SIZE_N = args["BLOCK_SIZE_N"]
+    BLOCK_SIZE_K = args["BLOCK_SIZE_K"]
+    ret["name"] = f"{kernel.name} [M={M}, N={N}, K={K}, BLOCK_SIZE_M={BLOCK_SIZE_M}, BLOCK_SIZE_N={BLOCK_SIZE_N}, BLOCK_SIZE_K={BLOCK_SIZE_K}]"
+    ret["name"] = f"{kernel.name} [M={M}, N={N}, K={K}]"
+    if "tiles_per_update" in args:
+        ret["name"] = f"{kernel.name} [M={M}, N={N}, K={K}, tiles_per_update={args['tiles_per_update']:02}]"
+    if "C_ptr" in args:
+        bytes_per_elem = args["C_ptr"].element_size()
+    else:
+        bytes_per_elem = 1 if args["FP8_OUTPUT"] else 2
+    ret[f"flops{bytes_per_elem * 8}"] = 2. * M * N * K
+    ret["bytes"] = bytes_per_elem * (M * K + N * K + M * N)
+    return ret
+
+
 @triton.autotune(
     configs=autotune_config,
     key=['M', 'N', 'K'],
 )
-@triton.jit
+@triton.jit(launch_metadata=_matmul_launch_metadata)
 def _persistent_matmul_kernel(
     A_ptr, B_ptr, C_ptr, bias_ptr,
     M, N, K,
@@ -181,7 +200,7 @@ class _persistent_linear(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
         input, weight, bias = ctx.saved_tensors
-        
+
         input_shape = input.shape
         grad_output_shape = grad_output.shape
         input = input.view(-1, input_shape[-1])
@@ -237,15 +256,16 @@ class _persistent_linear(torch.autograd.Function):
 
 persistent_linear = _persistent_linear.apply
 
-
+# ncu -f --set full -o lsl1 python ld_triton/ops/linear/persistent_linear.py
 if __name__ == '__main__':
+    import triton.profiler as proton
     # torch.set_printoptions(profile='full')
     M = 16 * 8
     in_features = 16 * 8
     out_features = 16 * 7
-    # M = 2048
-    # in_features = 8192
-    # out_features = 29696
+    M = 16
+    in_features = 8192
+    out_features = 29696
 
     factory_kwargs = {'device': 'cuda', 'dtype': torch.float16}
     input = torch.randn(M, 1, in_features, requires_grad=True, **factory_kwargs)
@@ -262,7 +282,7 @@ if __name__ == '__main__':
         file_name = f"{profile_name}.hatchet"
         proton_viewer.parse(metrics, file_name, depth=100)
 
-    # proton.start("matmul", hook="triton")
+    proton.start("matmul", hook="triton")
     output = torch.functional.F.linear(input, weight, bias)
     print(f'F.linear foward')
     doutput = torch.rand_like(output)
@@ -304,103 +324,103 @@ if __name__ == '__main__':
     assert torch.allclose(dweight, persistent_dweight, rtol=rtol, atol=atol)
     assert torch.allclose(dbias, persistent_dbias, rtol=rtol, atol=atol)
 
-    # proton.finalize()
-    # show_profile('fp16', "matmul")
+    proton.finalize()
+    show_profile('fp16', "matmul")
 
-    batch_size_and_seqlen = [
-        # inference
-        (1, 1),
-        (2, 1),
-        (3, 1),
-        (4, 1),
-        (8, 1),
-        (16, 1),
-        # train
-        (1, 2048), 
-        # (1, 1024 * 1024), # long context
-        (2, 2048),
-    ]
-    weight_shapes = [
-        # qwen2.5
-        # 0.5B
-        (896, 4864),
-        (4864, 896),
-        # 3b
-        (2048, 11008),
-        (11008, 2048),
-        # 7B
-        (3584, 18944),
-        (18944, 3584),
-        # 14B
-        (5120, 13824),
-        (13824, 5120),
-        # 32B
-        (5120, 27648),
-        (27648, 5120),
-        # 72B
-        (8192, 29696),
-        (29696, 8192),
+    # batch_size_and_seqlen = [
+    #     # inference
+    #     (1, 1),
+    #     (2, 1),
+    #     (3, 1),
+    #     (4, 1),
+    #     (8, 1),
+    #     (16, 1),
+    #     # train
+    #     (1, 2048), 
+    #     # (1, 1024 * 1024), # long context
+    #     (2, 2048),
+    # ]
+    # weight_shapes = [
+    #     # qwen2.5
+    #     # 0.5B
+    #     (896, 4864),
+    #     (4864, 896),
+    #     # 3b
+    #     (2048, 11008),
+    #     (11008, 2048),
+    #     # 7B
+    #     (3584, 18944),
+    #     (18944, 3584),
+    #     # 14B
+    #     (5120, 13824),
+    #     (13824, 5120),
+    #     # 32B
+    #     (5120, 27648),
+    #     (27648, 5120),
+    #     # 72B
+    #     (8192, 29696),
+    #     (29696, 8192),
 
-        # deepseek
-        # deepseek-ai/DeepSeek-V3-0324
-        (7168, 18432), # (hidden_size, intermediate_size),
-        (18432, 7168),
-    ]
+    #     # deepseek
+    #     # deepseek-ai/DeepSeek-V3-0324
+    #     (7168, 18432), # (hidden_size, intermediate_size),
+    #     (18432, 7168),
+    # ]
     
-    hardware_tflops = 0
-    hardware_gmemorys = torch.cuda.get_device_properties('cuda').total_memory / 1024 / 1024 / 1024
-    hardware_L2_cache_size = torch.cuda.get_device_properties('cuda').L2_cache_size / 1024
-    hardware_name = torch.cuda.get_device_name(0)
+    # hardware_tflops = 0
+    # hardware_gmemorys = torch.cuda.get_device_properties('cuda').total_memory / 1024 / 1024 / 1024
+    # hardware_L2_cache_size = torch.cuda.get_device_properties('cuda').L2_cache_size / 1024
+    # hardware_name = torch.cuda.get_device_name(0)
     
-    if hardware_name == "NVIDIA GeForce RTX 3060":
-        # name='NVIDIA GeForce RTX 3060', 
-        # major=8, minor=6, 
-        # total_memory=12287MB, 
-        # multi_processor_count=28,
-        # L2_cache_size=2MB
-        hardware_tflops = 25.3 # 
-    elif hardware_name == "NVIDIA GeForce RTX 3090":
-        # name='NVIDIA GeForce RTX 3090', 
-        # major=8, minor=6, 
-        # total_memory=24145MB, 
-        # multi_processor_count=82, 
-        # L2_cache_size=6MB
-        hardware_tflops = 71
-    elif hardware_name == "NVIDIA A40":
-        # name='NVIDIA A40', 
-        # major=8, minor=6, 
-        # total_memory=45518MB, 
-        # multi_processor_count=84,
-        # L2_cache_size=6MB
-        hardware_tflops = 149.7 
-    else:
-        raise ValueError("Unsupported GPU, please set hardware_tflops manually")
+    # if hardware_name == "NVIDIA GeForce RTX 3060":
+    #     # name='NVIDIA GeForce RTX 3060', 
+    #     # major=8, minor=6, 
+    #     # total_memory=12287MB, 
+    #     # multi_processor_count=28,
+    #     # L2_cache_size=2MB
+    #     hardware_tflops = 25.3 # 
+    # elif hardware_name == "NVIDIA GeForce RTX 3090":
+    #     # name='NVIDIA GeForce RTX 3090', 
+    #     # major=8, minor=6, 
+    #     # total_memory=24145MB, 
+    #     # multi_processor_count=82, 
+    #     # L2_cache_size=6MB
+    #     hardware_tflops = 71
+    # elif hardware_name == "NVIDIA A40":
+    #     # name='NVIDIA A40', 
+    #     # major=8, minor=6, 
+    #     # total_memory=45518MB, 
+    #     # multi_processor_count=84,
+    #     # L2_cache_size=6MB
+    #     hardware_tflops = 149.7 
+    # else:
+    #     raise ValueError("Unsupported GPU, please set hardware_tflops manually")
     
-    for batch_size, seqlen in batch_size_and_seqlen:
-        for shape in weight_shapes:
-            flops = 2 * batch_size * seqlen * shape[0] * shape[1]
-            gmemorys = input.dtype.itemsize * \
-                      (batch_size * seqlen * shape[0] +  shape[1] * shape[0] + batch_size * seqlen * shape[1]) \
-                      / 1024 / 1024 / 1024
-            if gmemorys > hardware_gmemorys:
-                print(f'hardware info: hardware_name: {hardware_name}, hardware_tflops: {hardware_tflops}, hardware_gmemroys: {hardware_gmemorys: .3f}')
-                print(f'batch_size: {batch_size}, seqlen: {seqlen}, in_features: {shape[0]}, out_features: {shape[1]}, gmemorys: {gmemorys:.3f} GB, '
-                      )
-                continue
-            input = torch.randn(batch_size * seqlen, shape[0], requires_grad=True, **factory_kwargs)
-            weight = torch.randn(shape[1], shape[0], requires_grad=True, **factory_kwargs)
-            bias = torch.randn(shape[1], requires_grad=True, **factory_kwargs)
-            output = torch.functional.F.linear(input, weight, bias)
-            persistent_output = persistent_linear(input, weight, bias)
+    # for batch_size, seqlen in batch_size_and_seqlen:
+    #     for shape in weight_shapes:
+    #         flops = 2 * batch_size * seqlen * shape[0] * shape[1]
+    #         gmemorys = input.dtype.itemsize * \
+    #                   (batch_size * seqlen * shape[0] +  shape[1] * shape[0] + batch_size * seqlen * shape[1]) \
+    #                   / 1024 / 1024 / 1024
+    #         if gmemorys > hardware_gmemorys:
+    #             print(f'hardware info: hardware_name: {hardware_name}, hardware_tflops: {hardware_tflops}, hardware_gmemroys: {hardware_gmemorys: .3f}')
+    #             print(f'batch_size: {batch_size}, seqlen: {seqlen}, in_features: {shape[0]}, out_features: {shape[1]}, gmemorys: {gmemorys:.3f} GB, '
+    #                   )
+    #             continue
+    #         input = torch.randn(batch_size * seqlen, shape[0], requires_grad=True, **factory_kwargs)
+    #         weight = torch.randn(shape[1], shape[0], requires_grad=True, **factory_kwargs)
+    #         bias = torch.randn(shape[1], requires_grad=True, **factory_kwargs)
+    #         output = torch.functional.F.linear(input, weight, bias)
+    #         persistent_output = persistent_linear(input, weight, bias)
             
-            rtol = 1e-1
-            atol = 0.5
+    #         rtol = 1e-1
+    #         atol = 0.5
 
-            assert torch.allclose(output, persistent_output, rtol=rtol, atol=atol), f"Output mismatch: {output} != {persistent_output}"
-            for func in [torch.functional.F.linear, persistent_linear]:
-                ms = triton.testing.do_bench(lambda: func(input, weight, bias),)
-                TFLOPS = (flops * 1e-12) / (ms * 1e-3)
-                MFU = 100 *(TFLOPS / hardware_tflops)
-                print(f'func: {func.__name__}, batch_size: {batch_size}, seqlen: {seqlen}, '
-                    f'in_features: {shape[0]}, out_features: {shape[1]}, '
-                    f'TFLOPS: {TFLOPS:.3f} TFLOPS/s, MFU: {MFU:.3f}%, ')
+    #         assert torch.allclose(output, persistent_output, rtol=rtol, atol=atol), f"Output mismatch: {output} != {persistent_output}"
+    #         for func in [torch.functional.F.linear, persistent_linear]:
+    #             ms = triton.testing.do_bench(lambda: func(input, weight, bias),)
+    #             TFLOPS = (flops * 1e-12) / (ms * 1e-3)
+    #             MFU = 100 *(TFLOPS / hardware_tflops)
+    #             print(f'func: {func.__name__}, batch_size: {batch_size}, seqlen: {seqlen}, '
+    #                 f'in_features: {shape[0]}, out_features: {shape[1]}, '
+    #                 f'TFLOPS: {TFLOPS:.3f} TFLOPS/s, MFU: {MFU:.3f}%, ')

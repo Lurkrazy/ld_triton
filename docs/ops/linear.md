@@ -741,11 +741,19 @@ for ((CtaTileM, CtaTileN, CtaTileK), (GemmM, GemmN, GemmK)) in ThreadblockShape_
 
 
 # 实现
+
+实际实现，M<=16 时，MFU远远没有达到理论值
 ## block matmul
+
+[Efficient GEMM in CUDA](https://github.com/NVIDIA/cutlass/blob/main/media/docs/cpp/efficient_gemm.md)
 
 ## persistent matmul
 
+[persistent matmul](https://triton-lang.org/main/getting-started/tutorials/09-persistent-matmul.html)
+
 ## Stream-K matmul
+
+[Stream-K: Work-centric Parallel Decomposition for Dense Matrix-Matrix Multiplication on the GPU](https://arxiv.org/pdf/2301.03598)
 
 # 参考文献
 [pytorch linear](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
@@ -755,3 +763,13 @@ for ((CtaTileM, CtaTileN, CtaTileK), (GemmM, GemmN, GemmK)) in ThreadblockShape_
 [Stream-K: Work-centric Parallel Decomposition for Dense Matrix-Matrix Multiplication on the GPU](https://arxiv.org/pdf/2301.03598)
 
 [CUTLASS Tutorial: Persistent Kernels and Stream-K](https://research.colfax-intl.com/cutlass-tutorial-persistent-kernels-and-stream-k/)
+
+[Warp Scheduling Basics](https://www.cs.ucr.edu/~nael/217-f19/lectures/WarpScheduling.pptx)
+
+[Dissecting the CUDA scheduling hierarchy: a Performance and Predictability Perspective](https://conferences.computer.org/cpsiot/pdfs/RTAS2020-4uXAu5nqG7QNiz5wFYyfj6/549900a210/549900a210.pdf)
+
+[DEVELOPING CUDA KERNELS TO PUSH TENSOR CORES TO THE ABSOLUTE LIMIT ON NVIDIA A100](https://developer.download.nvidia.cn/video/gputechconf/gtc/2020/presentations/s21745-developing-cuda-kernels-to-push-tensor-cores-to-the-absolute-limit-on-nvidia-a100.pdf)
+
+[GPU抢占式任务调度](https://zhuanlan.zhihu.com/p/657205626)
+
+[CUDA C/C++ Streams and Concurrency](https://developer.download.nvidia.cn/CUDA/training/StreamsAndConcurrencyWebinar.pdf)
