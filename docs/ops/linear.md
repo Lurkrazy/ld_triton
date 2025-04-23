@@ -298,8 +298,6 @@ weight_{tp-1} \\
 \end{bmatrix}, weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}
 $$
 
-$\frac{\partial f(linear(input))}{\partial input}$
-
 $$
 dinput =  \begin{bmatrix}
 doutput_{0}, 
@@ -332,7 +330,7 @@ $$
 $input \in {R}^{M \times infs}$
 
 $$
-dweight=doutput^{T}@intput=doutput^{T} =  \begin{bmatrix}
+dweight=doutput^{T}@intput =  \begin{bmatrix}
 doutput_{0}^{T} \\
 doutput_{1}^{T} \\
 \vdots \\
@@ -350,10 +348,8 @@ dbias_{0},
 dbias_{1},
 \cdots,
 dbias_{tp-1}
-\end{bmatrix}, dbias_{i} \in {R}^{\frac{outfs}{tp}}
+\end{bmatrix}, dbias_{j} = \sum_{p=0}^{M-1} doutput_{p,j*\frac{outfs}{tp}:(j+1)*\frac{outfs}{tp}}, dbias_{i} \in {R}^{\frac{outfs}{tp}}
 $$
-
-$dbias = \sum_{p=0}^{M-1} doutput_{p,:} = \sum_{p=0}^{M-1} doutput_{p,j*\frac{outfs}{tp}:(j+1)*\frac{outfs}{tp}}$
 
 $$
 dbias = \sum_{p=0}^{M-1} doutput_{p,:} =  \begin{bmatrix}
