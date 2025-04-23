@@ -226,10 +226,17 @@ weight_{0} \\
 weight_{1} \\
 \vdots \\
 weight_{tp-1}
-\end{bmatrix}
+\end{bmatrix}, weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}
 $$
 
-$weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}$
+$$
+weight^{T} =  \begin{bmatrix}
+weight_{0}^{T} ,
+weight_{1}^{T} ,
+\cdots ,
+weight_{tp-1}^{T}
+\end{bmatrix}, weight_{i}^{T} \in {R}^{infs \times \frac{outfs}{tp}}
+$$
 
 $bias \in {R}^{outfs}$
 
@@ -239,10 +246,8 @@ bias_{0},
 bias_{1},
 \cdots,
 bias_{tp-1}
-\end{bmatrix}
+\end{bmatrix}, bias_{i} \in {R}^{\frac{outfs}{tp}}
 $$
-
-$bias_{i} \in {R}^{\frac{outfs}{tp}}$
 
 $output \in {R}^{M \times outfs}$
 
@@ -251,15 +256,13 @@ output =  \begin{bmatrix}
 output_{0}, 
 output_{1}, 
 \cdots,
-output_{tp-1} \\
-\end{bmatrix}
+output_{tp-1}
+\end{bmatrix}, output_{i} \in {R}^{M \times \frac{outfs}{tp}}
 $$
-
-$output_{i} \in {R}^{M \times \frac{outfs}{tp}}$
 
 $output = input@weight^T + bias$
 
-$output_{i} = input@weight_{i}^T + bias$
+$output_{i} = input@weight_{i}^T + bias_{i}$
 
 ### backward
 #### input链式法则
@@ -272,11 +275,9 @@ doutput =  \begin{bmatrix}
 doutput_{0}, 
 doutput_{1}, 
 \cdots,
-doutput_{tp-1} \\
-\end{bmatrix}
+doutput_{tp-1}
+\end{bmatrix}, output_{i} \in {R}^{M \times \frac{outfs}{tp}}
 $$
-
-$output_{i} \in {R}^{M \times \frac{outfs}{tp}}$
 
 $$
 weight =  \begin{bmatrix}
@@ -284,10 +285,8 @@ weight_{0} \\
 weight_{1} \\
 \vdots \\
 weight_{tp-1} \\
-\end{bmatrix}
+\end{bmatrix}, weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}
 $$
-
-$weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}$
 
 $\frac{\partial f(linear(input))}{\partial input}$
 
@@ -318,11 +317,9 @@ doutput^{T} =  \begin{bmatrix}
 doutput_{0}^{T} \\
 doutput_{1}^{T} \\
 \vdots \\
-doutput_{tp-1}^{T} \\
-\end{bmatrix}
+doutput_{tp-1}^{T}
+\end{bmatrix}, doutput_{i}^{T} \in {R}^{\frac{outfs}{tp}}  \times M
 $$
-
-$doutput_{i}^{T} \in {R}^{\frac{outfs}{tp}}  \times M$
 
 $input \in {R}^{M \times infs}$
 
@@ -345,10 +342,8 @@ dbias_{0},
 dbias_{1},
 \cdots,
 dbias_{tp-1}
-\end{bmatrix}
+\end{bmatrix}, dbias_{i} \in {R}^{\frac{outfs}{tp}}
 $$
-
-$dbias_{i} \in {R}^{\frac{outfs}{tp}}$
 
 $dbias = \sum_{p=0}^{M-1} doutput_{p,:} = \sum_{p=0}^{M-1} doutput_{p,j*\frac{outfs}{tp}:(j+1)*\frac{outfs}{tp}}$
 
