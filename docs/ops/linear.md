@@ -260,9 +260,19 @@ output_{tp-1}
 \end{bmatrix}, output_{i} \in {R}^{M \times \frac{outfs}{tp}}
 $$
 
-$output = input@weight^T + bias$
-
-$output_{i} = input@weight_{i}^T + bias_{i}$
+$$
+output = input@weight^T + bias =  input@\begin{bmatrix}
+weight_{0}^{T} ,
+weight_{1}^{T} ,
+\cdots ,
+weight_{tp-1}^{T}
+\end{bmatrix} + \begin{bmatrix}
+bias_{0},
+bias_{1},
+\cdots,
+bias_{tp-1}
+\end{bmatrix}
+$$
 
 ### backward
 #### input链式法则
@@ -296,9 +306,7 @@ doutput_{0},
 doutput_{1}, 
 \cdots,
 doutput_{tp-1} \\
-\end{bmatrix} @
-
-\begin{bmatrix}
+\end{bmatrix} @ \begin{bmatrix}
 weight_{0} \\
 weight_{1} \\
 \vdots \\
