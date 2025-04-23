@@ -210,6 +210,157 @@ $\frac{\partial f(weight^T)}{\partial weight^T} = A^T @ \frac{\partial f(linear)
 
 $\frac{\partial f(weight)}{\partial weight} = (\frac{\partial f(linear)}{\partial C}) ^ T @ A$ 
 
+# Tensor Parallel
+## Column Parallel
+### forward
+
+$input \in {R}^{M \times infs}$
+
+$weight \in {R}^{outfs \times infs}$
+
+$tp$ Tensor Parallel Size
+
+$$
+weight =  \begin{bmatrix}
+weight_{0} \\
+weight_{1} \\
+\vdots \\
+weight_{tp-1}
+\end{bmatrix}
+$$
+
+$weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}$
+
+$bias \in {R}^{outfs}$
+
+$$
+bias =  \begin{bmatrix}
+bias_{0},
+bias_{1},
+\cdots,
+bias_{tp-1}
+\end{bmatrix}
+$$
+
+$bias_{i} \in {R}^{\frac{outfs}{tp}}$
+
+$output \in {R}^{M \times outfs}$
+
+$$
+output =  \begin{bmatrix}
+output_{0}, 
+output_{1}, 
+\cdots,
+output_{tp-1} \\
+\end{bmatrix}
+$$
+
+$output_{i} \in {R}^{M \times \frac{outfs}{tp}}$
+
+$output = input@weight^T + bias$
+
+$output_{i} = input@weight_{i}^T + bias$
+
+### backward
+#### input链式法则
+$\frac{\partial f(linear(input))}{\partial input}$
+
+$=doutput@weight$
+
+$$
+doutput =  \begin{bmatrix}
+doutput_{0}, 
+doutput_{1}, 
+\cdots,
+doutput_{tp-1} \\
+\end{bmatrix}
+$$
+
+$output_{i} \in {R}^{M \times \frac{outfs}{tp}}$
+
+$$
+weight =  \begin{bmatrix}
+weight_{0} \\
+weight_{1} \\
+\vdots \\
+weight_{tp-1} \\
+\end{bmatrix}
+$$
+
+$weight_{i} \in {R}^{\frac{outfs}{tp} \times infs}$
+
+$\frac{\partial f(linear(input))}{\partial input}$
+
+$$
+dinput =  \begin{bmatrix}
+doutput_{0}, 
+doutput_{1}, 
+\cdots,
+doutput_{tp-1} \\
+\end{bmatrix} @
+
+\begin{bmatrix}
+weight_{0} \\
+weight_{1} \\
+\vdots \\
+weight_{tp-1} \\
+\end{bmatrix} = \sum_{i=0}^{tp-1}doutput_{i}@weight_{i}
+$$
+
+#### weight链式法则
+
+$\frac{\partial f(linear(weight))}{\partial weight}$
+
+$=doutput^{T}@intput$
+
+$$
+doutput^{T} =  \begin{bmatrix}
+doutput_{0}^{T} \\
+doutput_{1}^{T} \\
+\vdots \\
+doutput_{tp-1}^{T} \\
+\end{bmatrix}
+$$
+
+$doutput_{i}^{T} \in {R}^{\frac{outfs}{tp}}  \times M$
+
+$input \in {R}^{M \times infs}$
+
+$$
+dweight=doutput^{T}@intput=doutput^{T} =  \begin{bmatrix}
+doutput_{0}^{T} \\
+doutput_{1}^{T} \\
+\vdots \\
+doutput_{tp-1}^{T} \\
+\end{bmatrix} @ input
+$$
+
+#### bias链式法则
+
+$\frac{\partial f(linear(bias))}{\partial bias} = \sum_{p=0}^{M-1} doutput_{p,:}$
+
+$$
+dbias =  \begin{bmatrix}
+dbias_{0},
+dbias_{1},
+\cdots,
+dbias_{tp-1}
+\end{bmatrix}
+$$
+
+$dbias_{i} \in {R}^{\frac{outfs}{tp}}$
+
+$dbias = \sum_{p=0}^{M-1} doutput_{p,:} = \sum_{p=0}^{M-1} doutput_{p,j*\frac{outfs}{tp}:(j+1)*\frac{outfs}{tp}}$
+
+$$
+dbias = \sum_{p=0}^{M-1} doutput_{p,:} =  \begin{bmatrix}
+\sum_{p=0}^{M-1} doutput_{p,0:\frac{outfs}{tp}},
+\sum_{p=0}^{M-1} doutput_{p,\frac{outfs}{tp}:2*\frac{outfs}{tp}},
+\cdots,
+\sum_{p=0}^{M-1} doutput_{p,(tp-1)*\frac{outfs}{tp}:tp} \\
+\end{bmatrix}
+$$
+
 # Arithmetic intensity
 ## Hardware
 RTX 3090 
