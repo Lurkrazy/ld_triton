@@ -15,17 +15,20 @@ from ld_triton.modules.spconv.utils import SparseConvTensor
     triton.testing.Benchmark(
         x_names=['C', 'K', 'R'],
         x_vals=[(3, 64, 3), 
-                (64, 64, 3), 
-                (64, 96, 3), (96, 96, 3), (96, 128, 3), 
-                (128, 128, 3), (128, 160, 3), (160, 160, 3), (160, 192, 3), (192, 192, 3),
-                (192, 224, 3), (224, 224, 3), (224, 256, 3)
-                ],
+                (64, 64, 3), (64, 96, 3), 
+                (96, 96, 3), (96, 128, 3), 
+                (128, 128, 3), (128, 160, 3), 
+                (160, 160, 3), (160, 192, 3), 
+                (192, 192, 3), (192, 224, 3), 
+                (224, 224, 3), (224, 256, 3)
+            ],
         line_arg='provider',
         line_vals=['spconv', "naive"], 
         line_names=['Spconv', "Naive"],
         styles=[("green", "-"), ("blue", "-")],
         ylabel='GB/s',
         plot_name='rms-norm-fwd',
+        # torch.float32 result is all, but torch.float16 sometimes results is not allclose
         args={'dtype': torch.float16, 'mode': 'fwd'},
     ))
 def bench_submconv3d_fwd(C, K, R, dtype, provider, mode='fwd', eps=1e-5, device='cuda'):
@@ -38,6 +41,7 @@ def bench_submconv3d_fwd(C, K, R, dtype, provider, mode='fwd', eps=1e-5, device=
             x = self.net(x)
             return x
     # (913903, 3), (80, 1600, 1600)
+    print(f'C: {C}, K: {K}, R: {R}, dtype: {dtype}, mode: {mode}')
     (_, coors, spatial_shape) = get_voxel_data_large()
     voxels_th = torch.randn((coors.shape[0], C), device=device, dtype=dtype)
     # print(voxels_th.shape, coors.shape, spatial_shape)
@@ -73,10 +77,10 @@ def bench_submconv3d_fwd(C, K, R, dtype, provider, mode='fwd', eps=1e-5, device=
     atol = 1.0
     if not torch.allclose(out.features, triton_out.features, rtol=rtol, atol=atol):
         # torch.set_printoptions(profile="full")
-        print(f'out: {out.features}')
-        print(f'triton_out: {triton_out.features}')
-        print(f'out - triton_out: {torch.abs(out.features - triton_out.features)}')
-        print(f'isclose: {torch.isclose(out.features, triton_out.features, rtol=rtol, atol=atol)}')
+        isclose = torch.isclose(out.features, triton_out.features, rtol=rtol, atol=atol)
+        print(f'out: {out.features[isclose == False]}')
+        print(f'triton_out: {triton_out.features[isclose == False]}')
+        print(f'out - triton_out: {torch.abs(out.features - triton_out.features)[isclose == False]}')
     else:
         assert torch.allclose(out.features, triton_out.features, rtol=rtol, atol=atol)
         
