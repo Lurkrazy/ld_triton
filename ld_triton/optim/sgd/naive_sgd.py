@@ -80,7 +80,7 @@ class NaiveSGD(Optimizer):
                 maximize = group['maximize'],
                 optim_type = group['optim_type'],
             )
-
+            
             if group['momentum'] != 0:
                 for p, bb_t in zip(params_with_grad, state_bb):
                     state = self.state[p]
@@ -205,19 +205,20 @@ if __name__ == '__main__':
     naive_x = x.clone()
     naive_target = target.clone()
 
-    for i in range(20):
+    for i in range(1):
         y = model(x)
         loss = loss_fn(y, target)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        
+        print(f'x: {x.grad}')
 
         naive_y = naive_model(naive_x)
         naive_loss = naive_loss_fn(naive_y, naive_target)
         naive_loss.backward()
         naive_optimizer.step()
         naive_optimizer.zero_grad()
+        
         rtol = 1e-2
         atol = 1e-2
         assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'

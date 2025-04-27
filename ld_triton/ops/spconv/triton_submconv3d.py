@@ -191,7 +191,7 @@ def calc_subm_conv_indices_kernel(table_key_ptr, table_val_ptr, hash_size, empty
                 tl.store(scatter_idx_ptr + scatter_idx_offs, idx, mask=filter_mask)
                 tl.store(scatter_idx_ptr + rotate_scatter_idx_offs, i_in, mask=filter_mask)
 
-                tl.atomic_add(indice_num_per_loc + pid_1, ss)
+                # tl.atomic_add(indice_num_per_loc + pid_1, ss)
                 # tl.atomic_add(indice_num_per_loc + RS - 1 - pid_1, ss)
 
 

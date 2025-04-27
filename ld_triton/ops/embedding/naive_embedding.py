@@ -34,6 +34,7 @@ class _naive_embedding(torch.autograd.Function):
         grad_output = grad_output.view(*input_shape, shape[-1])
         return None, grad_weight
 
+
 naive_embedding = _naive_embedding.apply
 
 

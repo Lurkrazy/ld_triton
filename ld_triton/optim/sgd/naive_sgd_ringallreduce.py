@@ -7,6 +7,8 @@ from torch.nn.parameter import Parameter
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+from torch.nn.parallel import DataParallel
+
 def deserialize_objects(object_list, object_sizes_tensor, object_tensor, group=None, device=None):
     offset = 0
     for i, obj_size in enumerate(object_sizes_tensor):
@@ -62,10 +64,6 @@ class NaiveSGD(Optimizer):
 
     @torch.no_grad()
     def step(self, closure=None):
-        world_size = dist.get_world_size()
-        rank = dist.get_rank()
-        next_rank = (rank + 1) % world_size
-        pre_rank = (rank - 1) % world_size
         loss = None
         if closure is not None:
             with torch.enable_grad():
@@ -84,6 +82,8 @@ class NaiveSGD(Optimizer):
                 
                 if p.grad.is_sparse:
                     raise RuntimeError('NaiveSGD does not support sparse gradients')
+                dist.all_reduce(p.grad, op=dist.ReduceOp.SUM, group=self._group)
+                p.grad.div_(world_size)
                 grads.append(p.grad)
                 recv_grads.append(None)
                 momentum = group['momentum']
@@ -91,48 +91,7 @@ class NaiveSGD(Optimizer):
                 if momentum != 0:
                     state = self.state[p]
                     state_bb.append(state.get('momentum_buffer'))
-
-            # Adapted from recv_object_list and send_object_list
-            current_device = self._device or dist.distributed_c10d._get_pg_default_device(group)
-
-            tensor_list, size_list = zip(*[dist.distributed_c10d._object_to_tensor(obj, current_device, group) for obj in grads])
-            sizes_tensor = torch.cat(size_list)
-
-            if len(tensor_list) == 1:
-                send_grads_tensor = tensor_list[0]
-            else:
-                send_grads_tensor = torch.cat(tensor_list)
-
-            recv_grads_tensor = torch.empty(
-                torch.sum(sizes_tensor).item(),
-                dtype=torch.uint8,
-                device=current_device
-            )
-
-            for r in range(world_size - 1):
-                worker = dist.irecv(recv_grads_tensor, src=pre_rank, group=self._group)
-
-                dist.send(send_grads_tensor, dst=next_rank, group=self._group)
-
-                worker.wait()  
-
-                send_grads_tensor = recv_grads_tensor.clone()
-                
-                deserialize_objects(
-                    recv_grads,
-                    sizes_tensor,
-                    recv_grads_tensor,
-                    group=self._group,
-                    device=self._device,
-                )
-
-                for i, grad in enumerate(grads):
-                    acc_grad = grad
-                    grad.add_(recv_grads[i], alpha=1.0)
-                
-            for i, grad in enumerate(grads):
-                grad.div_(world_size)
-
+            
             naive_sgd(
                 params_with_grad,
                 grads,
@@ -210,7 +169,6 @@ def _single_tensor_naive_sgd(
         else:
             param.add_(grad, alpha=-lr)
         
-from torch.nn.parallel import DistributedDataParallel as DDP
 # torchrun --nnodes 1 --nproc_per_node 3 ld_triton/optim/sgd/naive_sgd_ringallreduce.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
@@ -304,4 +262,5 @@ if __name__ == '__main__':
         atol = 1e-2
 
         assert torch.allclose(y, naive_y, rtol=rtol, atol=atol), f'i: {i}, y: {y}, naive_y: {naive_y}, {torch.isclose(y, naive_y)}'
+
     dist.destroy_process_group()
