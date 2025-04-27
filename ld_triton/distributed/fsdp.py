@@ -61,7 +61,7 @@ class NaiveRingAllReduce(torch.nn.Module):
             p.grad = input_grad.narrow(0, 0, p.grad.numel()).div_(self._world_size).view(shape)
 
 
-# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/ring_allreduce.py
+# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/fsdp.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
     

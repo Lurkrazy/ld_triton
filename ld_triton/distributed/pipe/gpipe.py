@@ -101,7 +101,7 @@ class GPipe(nn.Module):
 
         if self._stage_id == self._num_stage - 1 and self._debug:
             self._print_clock_cycles(self._num_stage, self._num_micro_batch)
-            
+
     def init_pipe_buffers(self):
         factory_kwargs = {'device': self._device, 'dtype': self._dtype, 'requires_grad': True}
         shape = (self._micro_batch_size, *self._model_input_shape[1:])

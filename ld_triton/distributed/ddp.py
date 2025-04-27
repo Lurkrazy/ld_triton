@@ -7,6 +7,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from collections import deque
 
+
 class NaiveRingAllReduce(torch.nn.Module):
     def __init__(
         self,
@@ -49,7 +50,7 @@ class NaiveRingAllReduce(torch.nn.Module):
             self._deque.append(worker)
             worker.wait()
 
-# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/ring_allreduce.py
+# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/ddp.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
     

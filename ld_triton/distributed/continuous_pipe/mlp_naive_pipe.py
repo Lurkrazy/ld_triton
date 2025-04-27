@@ -40,9 +40,9 @@ class LDLinear(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = Parameter(torch.ones((out_features, in_features), **factory_kwargs) * 0.5)
+        self.weight = Parameter(torch.ones((out_features, in_features), **factory_kwargs) * 0.1)
         if bias:
-            self.bias = Parameter(torch.ones(out_features, **factory_kwargs) * 0.5)
+            self.bias = Parameter(torch.zeros(out_features, **factory_kwargs) * 0.1)
         else:
             self.register_parameter('bias', None)
 
@@ -77,6 +77,7 @@ class NaivePipeMLP(nn.Module):
         self.layers = nn.Sequential(
             *[nn.Sequential(
                 LDLinear(node_sizes[i], node_sizes[i+1], bias=False, **factory_kwargs),
+                nn.LeakyReLU() if node_activations[i] == 'relu' else nn.LeakyReLU()
              ) 
             for i in range(len(node_sizes) - 1)]
         )
@@ -126,7 +127,7 @@ class SingleMLP(nn.Module):
                 *[nn.Sequential(
                     *[nn.Sequential(
                         LDLinear(node_sizes[i], node_sizes[i+1], bias=False, **factory_kwargs),
-                        )
+                        nn.LeakyReLU() if node_activations[i] == 'relu' else nn.LeakyReLU())
                     for i in range(len(node_sizes) - 1)]) 
                 for (node_sizes, node_activations) in zip(sizes, activations)])
 
@@ -233,8 +234,8 @@ class NaivePipeMLPTrain():
         optimizer.step()
 
     def train(self):
-        step = 20
-        for i in range(step):
+        num_global_step = 20
+        for global_stable_id in range(num_global_step):
             self.model.zero_grad()
             # forward
             if self._rank == 0:
@@ -270,15 +271,15 @@ class NaivePipeMLPTrain():
                 self.backward_and_update()
 
 
-# torchrun --nnodes 1 --nproc_per_node 3 ld_triton/distributed/pipe/mlp_naive_pipe.py
+# torchrun --nnodes 1 --nproc_per_node 4 ld_triton/distributed/continuous_pipe/mlp_naive_pipe.py
 if __name__ == '__main__':
     dist.init_process_group(backend='gloo')
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     group = dist.new_group()
     # sizes = [[4, 8, 8], [8, 8, 16], [16, 16, 4]]
-    sizes = [[2, 2], [2, 2], [2, 2]]
-    activations = [['relu', 'relu'], ['relu', 'relu'], ['relu', 'softmax']]
+    sizes = [[2, 2], [2, 2], [2, 2], [2, 2]]
+    activations = [['relu', 'relu'], ['relu', 'relu'], ['relu', 'relu'], ['relu', 'softmax']]
 
     batch_size = 2
     _debug = True
