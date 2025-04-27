@@ -1166,3 +1166,9 @@ $+ 0$
 [Dissecting the CUDA scheduling hierarchy: a Performance and Predictability Perspective](https://conferences.computer.org/cpsiot/pdfs/RTAS2020-4uXAu5nqG7QNiz5wFYyfj6/549900a210/549900a210.pdf)
 
 [Embedding计算在GPU上的性能优化](https://yywangcs.notion.site/Embedding-GPU-1-GPU-Occupancy-178fc9f5d80580d4affddeb4c40c64e0)
+
+[Pushing the Performance Envelope of DNN-based Recommendation Systems Inference on GPUs](https://arxiv.org/pdf/2410.22249)
+
+[The Streaming Batch Model for Efficient and Fault-Tolerant Heterogeneous Execution](https://arxiv.org/pdf/2501.12407)
+
+[GenAI LLM KV Cache Offloading](https://www.youtube.com/watch?v=CV4FYMTFO5c)
