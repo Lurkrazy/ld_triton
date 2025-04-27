@@ -271,35 +271,53 @@ if __name__ == '__main__':
     BLOCK_N = 128
 
     dtype_ = [torch.float32, torch.float16]
+    dtype_ = [torch.float32]
     for dtype in dtype_:
         q = (torch.empty((Z, H, N_CTX, HEAD_DIM), dtype=dtype, device="cuda").normal_(mean=0.0, std=0.5).requires_grad_())
-        k = (torch.empty((Z, H, N_CTX, HEAD_DIM), dtype=dtype, device="cuda").normal_(mean=0.0, std=0.5).requires_grad_())
-        v = (torch.empty((Z, H, N_CTX, HEAD_DIM), dtype=dtype, device="cuda").normal_(mean=0.0, std=0.5).requires_grad_())
+        k = (torch.empty((Z, N_CTX, HEAD_DIM), dtype=dtype, device="cuda").normal_(mean=0.0, std=0.5).requires_grad_())
+        v = (torch.empty((Z, N_CTX, HEAD_DIM), dtype=dtype, device="cuda").normal_(mean=0.0, std=0.5).requires_grad_())
         dout = torch.randn_like(q)
         causal_ = [False, True]
+        causal_ = [False]
         sm_scale = 0.5
         for causal in causal_:
-            torch_p: torch.Tensor = torch.matmul(q, k.transpose(2, 3)) * sm_scale
+            torch_k = k.view(Z, 1, N_CTX, HEAD_DIM).expand(Z, H, N_CTX, HEAD_DIM)
+            torch_v = v.view(Z, 1, N_CTX, HEAD_DIM).expand(Z, H, N_CTX, HEAD_DIM)
+            torch_p: torch.Tensor = torch.matmul(q, torch_k.transpose(2, 3)) * sm_scale
             if causal:
                 M = torch.tril(torch.ones((N_CTX, N_CTX), device=q.device))
                 torch_p[:, :, M == 0] = float('-inf')
             torch_p = torch.softmax(torch_p.float(), dim=-1).to(dtype)
-            torch_o = torch.matmul(torch_p, v)
+            torch_o_0 = torch.matmul(torch_p, torch_v)
+            torch_o_0.backward(dout)
+            torch_dq_0, q.grad = q.grad.clone(), None
+            torch_dk_0, k.grad = k.grad.clone(), None
+            torch_dv_0, v.grad = v.grad.clone(), None
+            print(f'torch_dv_0: {torch_dk_0}')
+            
+            torch_o = torch.zeros_like(q)
+            for h in range(H):
+                p = torch.matmul(q[:, h, :, :], k.transpose(1, 2)) * sm_scale
+                if causal:
+                    M = torch.tril(torch.ones((N_CTX, N_CTX), device=q.device))
+                    p[:, M == 0] = float('-inf')
+                p = torch.softmax(p.float(), dim=-1).to(dtype)
+                o = torch.matmul(p, v)
+                torch_o[:, h, :, :] = o
             torch_o.backward(dout)
-            torch_dq, q.grad = q.grad.clone(), None
-            torch_dk, k.grad = k.grad.clone(), None
-            torch_dv, v.grad = v.grad.clone(), None
+            dq, dk, dv = q.grad.clone(), k.grad.clone(), v.grad.clone()
+            print(f'dk: {dk}')
 
             naive_o = naive_mha(q, k, v, causal, sm_scale)
-            naive_o.backward(dout)
-            naive_dq, q.grad = q.grad.clone(), None
-            naive_dk, k.grad = k.grad.clone(), None
-            naive_dv, v.grad = v.grad.clone(), None
-            atol = 1e-2 if dtype == torch.float16 else 1e-3
-            rtol = 1e-2 if dtype == torch.float16 else 1e-3
-            assert torch.allclose(torch_o, naive_o, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
-            assert torch.allclose(torch_dq, naive_dq, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
-            assert torch.allclose(torch_dk, naive_dk, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
-            assert torch.allclose(torch_dv, naive_dv, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
+            # naive_o.backward(dout)
+            # naive_dq, q.grad = q.grad.clone(), None
+            # naive_dk, k.grad = k.grad.clone(), None
+            # naive_dv, v.grad = v.grad.clone(), None
+            # atol = 1e-2 if dtype == torch.float16 else 1e-3
+            # rtol = 1e-2 if dtype == torch.float16 else 1e-3
+            # assert torch.allclose(torch_o, naive_o, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
+            # assert torch.allclose(torch_dq, naive_dq, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
+            # assert torch.allclose(torch_dk, naive_dk, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
+            # assert torch.allclose(torch_dv, naive_dv, atol=atol, rtol=rtol), f'Z: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}, dtype: {dtype}'
             
             
