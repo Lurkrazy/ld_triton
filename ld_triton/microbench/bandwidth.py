@@ -59,3 +59,4 @@ if __name__ == "__main__":
     bandwidth_per_second = gb / (ms * 1e-3)
     print(f"ms: {ms}, gb: {gb}, bandwidth_per_second: {bandwidth_per_second:.3f} GB/s")
 
+
